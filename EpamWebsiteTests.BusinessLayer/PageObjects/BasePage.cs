@@ -9,6 +9,9 @@ public abstract class BasePage
     protected readonly IWebDriver Driver;
     protected readonly WebDriverWait Wait;
 
+    private readonly By acceptCookiesButton = By.Id("onetrust-accept-btn-handler");
+    private readonly By cookieBanner = By.Id("onetrust-group-container");
+
     protected BasePage(IWebDriver driver)
     {
         Driver = driver;
@@ -21,14 +24,15 @@ public abstract class BasePage
         {
             var acceptCookies = Wait.Until(driver =>
             {
-                var btns = driver.FindElements(By.Id("onetrust-accept-btn-handler"));
-                return btns.Count > 0 && btns[0].Displayed && btns[0].Enabled ? btns[0] : null;
+                var button = driver.FindElement(acceptCookiesButton);
+                return button.Displayed && button.Enabled ? button : null;
             });
+
             acceptCookies.Click();
             Wait.Until(driver =>
             {
-                var banners = driver.FindElements(By.Id("onetrust-group-container"));
-                return banners.Count == 0 || !banners[0].Displayed;
+                var banner = driver.FindElement(cookieBanner);
+                return banner == null || !banner.Displayed;
             });
         }
         catch (WebDriverTimeoutException)

@@ -10,6 +10,7 @@ public class EpamTests : IDisposable
 {
     private readonly IWebDriver driver;
     private readonly WebDriverWait wait;
+    private bool disposed = false;
 
     public EpamTests()
     {
@@ -17,11 +18,6 @@ public class EpamTests : IDisposable
         driver.Manage().Window.Maximize();
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
         wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
-    }
-
-    public void Dispose()
-    {
-        driver.Quit();
     }
 
     [Theory]
@@ -49,40 +45,36 @@ public class EpamTests : IDisposable
     [InlineData("BLOCKCHAIN")]
     [InlineData("Cloud")]
     [InlineData("Automation")]
-    public void GlobalSearchTest(string searchTerm)
+    public void GlobalSearchTest(string keyword)
     {
-        driver.Navigate().GoToUrl("https://www.epam.com/");
-        AcceptCookiesIfPresent();
+        var mainPage = new MainPage(driver);
 
-        driver.FindElement(By.ClassName("header-search__button")).Click();
-        var searchInput = driver.FindElement(By.TagName("input"));
-        searchInput.Clear();
-        searchInput.SendKeys(searchTerm);
-        driver.FindElement(By.XPath("//button[contains(@class,'custom-search-button') and .//span[contains(text(),'Find')]]")).Click();
+        mainPage.Open();
+        mainPage.ClickGlobalSearchButton();
+        mainPage.EnterGlobalSearchKeyword(keyword);
+        mainPage.ClickGlobalSearchSubmitButton();
+        var links = mainPage.GetGlobalSearchResultLinks(wait);
 
-        var links = wait.Until(d => d.FindElements(By.CssSelector(".search-results__item a")));
-        Assert.All(links, link => Assert.Contains(searchTerm, link.Text, StringComparison.OrdinalIgnoreCase));
+        Assert.All(links, link => Assert.Contains(keyword, link.Text, StringComparison.OrdinalIgnoreCase));
     }
 
-    private void AcceptCookiesIfPresent()
+    protected virtual void Dispose(bool disposing)
     {
-        try
+        if (!disposed)
         {
-            var acceptCookies = wait.Until(driver =>
+            if (disposing)
             {
-                var btns = driver.FindElements(By.Id("onetrust-accept-btn-handler"));
-                return btns.Count > 0 && btns[0].Displayed && btns[0].Enabled ? btns[0] : null;
-            });
-            acceptCookies.Click();
-            wait.Until(driver =>
-            {
-                var banners = driver.FindElements(By.Id("onetrust-group-container"));
-                return banners.Count == 0 || !banners[0].Displayed;
-            });
+                driver?.Quit();
+                driver?.Dispose();
+            }
+
+            disposed = true;
         }
-        catch (WebDriverTimeoutException)
-        {
-            // Cookie banner not present, continue
-        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 }

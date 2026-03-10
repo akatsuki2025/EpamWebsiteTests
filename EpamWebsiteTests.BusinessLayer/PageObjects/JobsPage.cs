@@ -99,7 +99,11 @@ public class JobsPage : BasePage
             refreshWait.Until(ExpectedConditions.StalenessOf(firstCard));
         }
 
-        refreshWait.Until(d => d.FindElements(jobCards).Count > 0);
+        refreshWait.Until(driver =>
+        {
+            var cards = driver.FindElements(jobCards);
+            return cards.Count > 0 && cards.All(card => card.Displayed);
+        });
     }
 
     private void ExpandCard(int index, WebDriverWait wait)
