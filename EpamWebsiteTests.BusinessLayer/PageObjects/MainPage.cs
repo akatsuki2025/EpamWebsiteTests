@@ -8,7 +8,7 @@ public class MainPage : BasePage
     private const string MainUrl = "https://www.epam.com/";
     private readonly By careersLink = By.LinkText("Careers");
     private readonly By globalSearchButton = By.ClassName("header-search__button");
-    private readonly By globalSearchInput = By.CssSelector("input.header-search__input.frequent-searches__input");
+    private readonly By globalSearchInput = By.Name("q");
     private readonly By globalSearchSubmitButton = By.XPath("//button[contains(@class,'custom-search-button') and .//span[contains(text(),'Find')]]");
     private readonly By globalSearchResultLinks = By.CssSelector(".search-results__item a");
 
