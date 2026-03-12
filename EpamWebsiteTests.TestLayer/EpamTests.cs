@@ -16,7 +16,7 @@ public class EpamTests : IDisposable
     {
         driver = new ChromeDriver();
         driver.Manage().Window.Maximize();
-        driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+        driver.Manage().Timeouts().ImplicitWait = TimeSpan.Zero;
         wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
     }
 
@@ -56,6 +56,43 @@ public class EpamTests : IDisposable
         var links = mainPage.GetGlobalSearchResultLinks(wait);
 
         Assert.All(links, link => Assert.Contains(keyword, link.Text, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Theory]
+    [InlineData("EPAM_Systems_Company_Overview.pdf")]
+    public void DownloadFileTest(string fileName)
+    { 
+        var mainPage = new MainPage(driver);
+        var aboutPage = new AboutPage(driver);
+
+        mainPage.Open();
+        mainPage.ClickAbout();
+        aboutPage.ScrollToEpamAtAGlance();
+    }
+
+    [Fact]
+    public void CarouselArticleTitleMatchesDetailPageTest()
+    {
+        var mainPage = new MainPage(driver);
+        var insightsPage = new InsightsPage(driver);
+        var articlePage = new ArticlePage(driver);
+
+        mainPage.Open();
+        mainPage.AcceptCookiesIfPresent();
+        mainPage.ClickInsights();
+
+        const int swipeCount = 2; // change as needed
+
+        for (int i = 0; i < swipeCount; i++)
+        {
+            insightsPage.ClickCarouselNextButton();
+        }
+
+        var carouselTitle = insightsPage.GetCurrentCarouselArticleTitle();
+        insightsPage.ClickReadMoreButton();
+
+        var articleTitle = articlePage.GetArticleTitle();
+        Assert.Equal(carouselTitle, articleTitle, ignoreCase: true);
     }
 
     protected virtual void Dispose(bool disposing)

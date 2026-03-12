@@ -1,5 +1,6 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
+using System.Security.Cryptography.X509Certificates;
 
 namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
@@ -7,6 +8,8 @@ public class MainPage : BasePage
 {
     private const string MainUrl = "https://www.epam.com/";
     private readonly By careersLink = By.LinkText("Careers");
+    private readonly By insightsLink = By.LinkText("Insights");
+    private readonly By aboutLink = By.LinkText("About");
     private readonly By globalSearchButton = By.ClassName("header-search__button");
     private readonly By globalSearchInput = By.Name("q");
     private readonly By globalSearchSubmitButton = By.XPath("//button[contains(@class,'custom-search-button') and .//span[contains(text(),'Find')]]");
@@ -30,6 +33,16 @@ public class MainPage : BasePage
     public void ClickCareers()
     {
         Driver.FindElement(careersLink).Click();
+    }
+
+    public void ClickInsights()
+    {
+        Driver.FindElement(insightsLink).Click();
+    }
+
+    public void ClickAbout()
+    {
+        Driver.FindElement(aboutLink).Click();
     }
 
     public void ClickGlobalSearchButton()
