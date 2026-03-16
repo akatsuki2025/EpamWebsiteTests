@@ -78,20 +78,12 @@ public class EpamTests : IDisposable
         var articlePage = new ArticlePage(driver);
 
         mainPage.Open();
-        mainPage.AcceptCookiesIfPresent();
         mainPage.ClickInsights();
-
-        const int swipeCount = 2; // change as needed
-
-        for (int i = 0; i < swipeCount; i++)
-        {
-            insightsPage.ClickCarouselNextButton();
-        }
-
-        var carouselTitle = insightsPage.GetCurrentCarouselArticleTitle();
+        insightsPage.SwipeCarouselNext(2);
+        var carouselTitle = insightsPage.GetActiveCarouselArticleTitle();
         insightsPage.ClickReadMoreButton();
-
         var articleTitle = articlePage.GetArticleTitle();
+
         Assert.Equal(carouselTitle, articleTitle, ignoreCase: true);
     }
 
