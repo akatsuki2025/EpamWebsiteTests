@@ -29,28 +29,35 @@ public class MainPage : BasePage
 
     public void ClickCareers()
     {
-        Driver.FindElement(careersLink).Click();
+        WaitUntilClickable(careersLink).Click();
     }
 
     public void ClickGlobalSearchButton()
     {
-        Driver.FindElement(globalSearchButton).Click();
+        WaitUntilClickable(globalSearchButton).Click();
     }
 
     public void EnterGlobalSearchKeyword(string keyword)
     {
-        var searchInput = Driver.FindElement(globalSearchInput);
+        var searchInput = WaitUntilClickable(globalSearchInput);
         searchInput.Clear();
         searchInput.SendKeys(keyword);
     }
 
     public void ClickGlobalSearchSubmitButton()
     {
-        Driver.FindElement(globalSearchSubmitButton).Click();
+        WaitUntilClickable(globalSearchSubmitButton).Click();
     }
 
-    public IReadOnlyCollection<IWebElement> GetGlobalSearchResultLinks(WebDriverWait wait)
+    public IReadOnlyCollection<IWebElement> GetGlobalSearchResultLinks()
     {
-        return wait.Until(driver => driver.FindElements(globalSearchResultLinks));
+        return Wait.Until(d =>
+        {
+            var links = d.FindElements(globalSearchResultLinks)
+                .Where(e => e.Displayed)
+                .ToList();
+
+            return links.Count > 0 ? links : null;
+        });
     }
 }

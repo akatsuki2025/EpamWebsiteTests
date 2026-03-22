@@ -9,15 +9,12 @@ namespace EpamWebsiteTests.TestLayer;
 public class EpamTests : IDisposable
 {
     private readonly IWebDriver driver;
-    private readonly WebDriverWait wait;
     private bool disposed = false;
 
     public EpamTests()
     {
         driver = new ChromeDriver();
         driver.Manage().Window.Maximize();
-        driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
-        wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
     }
 
     [Theory]
@@ -36,9 +33,9 @@ public class EpamTests : IDisposable
         jobsPage.SelectLocation(location);
         jobsPage.SelectWorkplaceType(workplaceType);
         jobsPage.ClickSearchAndWaitForResults();
-        string jobCardText = jobsPage.ExpandAndGetLastCardText();
+        string? jobCardText = jobsPage.ExpandAndGetLastCardText();
 
-        Assert.Contains(keyword, jobCardText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(keyword, jobCardText ?? string.Empty, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]
@@ -53,7 +50,7 @@ public class EpamTests : IDisposable
         mainPage.ClickGlobalSearchButton();
         mainPage.EnterGlobalSearchKeyword(keyword);
         mainPage.ClickGlobalSearchSubmitButton();
-        var links = mainPage.GetGlobalSearchResultLinks(wait);
+        var links = mainPage.GetGlobalSearchResultLinks();
 
         Assert.All(links, link => Assert.Contains(keyword, link.Text, StringComparison.OrdinalIgnoreCase));
     }
