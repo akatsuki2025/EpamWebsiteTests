@@ -12,7 +12,7 @@ public class CareersPage : BasePage
 
     public void ClickStartJobSearch()
     {
-        var searchButton = Wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementToBeClickable(startJobSearchButton));
+        var searchButton = WaitUntilClickable(startJobSearchButton);
         searchButton.Click();
     }
 }

@@ -8,22 +8,14 @@ namespace EpamWebsiteTests.TestLayer;
 
 public class EpamTests
 {
-    private static IWebDriver CreateDriver(bool headless)
+    private readonly IWebDriver driver;
+    private bool disposed = false;
+
+    public EpamTests()
     {
-        var options = new ChromeOptions();
-        if (headless)
-        {
-            options.AddArgument("--headless=new");
-            options.AddArgument("--window-size=1920,1080");
-        }
-
-        var driver = new ChromeDriver(options);
-        driver.Manage().Timeouts().ImplicitWait = TimeSpan.Zero;
-
-        if (!headless)
-        {
-            driver.Manage().Window.Maximize();
-        }
+        driver = new ChromeDriver();
+        driver.Manage().Window.Maximize();
+    }
 
         return driver;
     }
@@ -48,10 +40,9 @@ public class EpamTests
         jobsPage.SelectLocation(location);
         jobsPage.SelectWorkplaceType(workplaceType);
         jobsPage.ClickSearchAndWaitForResults();
+        string? jobCardText = jobsPage.ExpandAndGetLastCardText();
 
-        var jobCardText = jobsPage.ExpandAndGetLastCardText();
-
-        Assert.Contains(keyword, jobCardText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(keyword, jobCardText ?? string.Empty, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]
@@ -72,8 +63,7 @@ public class EpamTests
         mainPage.ClickGlobalSearchButton();
         mainPage.EnterGlobalSearchKeyword(keyword);
         mainPage.ClickGlobalSearchSubmitButton();
-
-        var links = mainPage.GetGlobalSearchResultLinks(wait);
+        var links = mainPage.GetGlobalSearchResultLinks();
 
         Assert.All(links, link => Assert.Contains(keyword, link.Text, StringComparison.OrdinalIgnoreCase));
     }

@@ -47,43 +47,47 @@ public class JobsPage : BasePage
             throw new ArgumentException($"Invalid work type: {workType}. Valid options are: {string.Join(", ", validWorkTypes)}");
         }
 
-        var checkboxLabel = Driver.FindElement(GetWorkplaceTypeLabelBy(workType));
+        var checkboxLabel = WaitUntilClickable(GetWorkplaceTypeLabelBy(workType));
         new Actions(Driver).MoveToElement(checkboxLabel).Perform();
         checkboxLabel.Click();
     }
 
     public void ClickSearchAndWaitForResults()
     {
-        Driver.FindElement(searchButton).Click();
+        WaitUntilClickable(searchButton).Click();
         WaitForResultsRefresh();
     }
 
-    public string ExpandAndGetLastCardText()
+    public string? ExpandAndGetLastCardText()
     {
-        int lastIndex = GetLastCardIndex();
+        int? lastIndex = GetLastCardIndex();
+        if (lastIndex == null)
+        {
+            return null;
+        }
 
-        ExpandCard(lastIndex, Wait);
-        WaitForCardContent(lastIndex, Wait);
-        return GetCardInnerText(lastIndex, Wait);
+        ExpandCardAndWaitUntilOpened(lastIndex.Value);
+        var fullText = WaitForStableCardText(lastIndex.Value);
+        return string.IsNullOrWhiteSpace(fullText) ? null : fullText;
     }
 
     private void ClearLocationSelection()
     {
-        Wait.Until(ExpectedConditions.ElementToBeClickable(locationInputClearButton)).Click();
+        WaitUntilClickable(locationInputClearButton).Click();
     }
 
     private void OpenLocationDropdown()
     {
-        Driver.FindElement(locationInput).Click();
-        Wait.Until(ExpectedConditions.ElementIsVisible(locationDropdownOption));
+        WaitUntilClickable(locationInput).Click();
+        WaitUntilVisible(locationDropdownOption);
     }
 
-    private int GetLastCardIndex()
+    private int? GetLastCardIndex()
     {
         var cards = Driver.FindElements(jobCards);
         if (cards.Count == 0)
         {
-            throw new InvalidOperationException("No job cards found.");
+            return null;
         }
 
         return cards.Count - 1;
@@ -91,24 +95,23 @@ public class JobsPage : BasePage
 
     private void WaitForResultsRefresh()
     {
-        var refreshWait = new WebDriverWait(Driver, TimeSpan.FromSeconds(20));
         var firstCard = Driver.FindElements(jobCards).FirstOrDefault();
 
         if (firstCard != null)
         {
-            refreshWait.Until(ExpectedConditions.StalenessOf(firstCard));
+            Wait.Until(ExpectedConditions.StalenessOf(firstCard));
         }
 
-        refreshWait.Until(driver =>
+        Wait.Until(driver =>
         {
             var cards = driver.FindElements(jobCards);
             return cards.Count > 0 && cards.All(card => card.Displayed);
         });
     }
 
-    private void ExpandCard(int index, WebDriverWait wait)
+    private void ExpandCardAndWaitUntilOpened(int index)
     {
-        wait.Until(d =>
+        Wait.Until(d =>
         {
             try
             {
@@ -118,14 +121,18 @@ public class JobsPage : BasePage
                     return false;
                 }
 
-                var classAttr = card.GetAttribute("class");
-                if (classAttr == null || classAttr.Contains("opened", StringComparison.OrdinalIgnoreCase))
+                var classAttribute = card.GetAttribute("class") ?? string.Empty;
+                var isOpened = classAttribute.Contains("opened", StringComparison.OrdinalIgnoreCase);
+
+                if (!isOpened)
                 {
-                    return true;
+                    ((IJavaScriptExecutor)d).ExecuteScript("arguments[0].click();", card);
+
+                    classAttribute = card.GetAttribute("class") ?? string.Empty;
+                    isOpened = classAttribute.Contains("opened", StringComparison.OrdinalIgnoreCase);
                 }
 
-                ((IJavaScriptExecutor)d).ExecuteScript("arguments[0].click();", card);
-                return true;
+                return isOpened;
             }
             catch (StaleElementReferenceException)
             {
@@ -134,58 +141,69 @@ public class JobsPage : BasePage
         });
     }
 
-    private void WaitForCardContent(int index, WebDriverWait wait)
+    private string WaitForStableCardText(int index)
     {
-        wait.Until(d =>
+        string? lastObservedText = null;
+        int consecutiveStableReads = 0;
+
+        var result = Wait.Until(d =>
         {
             try
             {
                 var card = GetCardByIndex(d, index);
                 if (card == null)
                 {
-                    return false;
-                }
-
-                var classAttr = card.GetAttribute("class");
-
-                return classAttr != null
-                    && classAttr.Contains("opened", StringComparison.OrdinalIgnoreCase)
-                    && card.Displayed;
-            }
-            catch (StaleElementReferenceException)
-            {
-                return false;
-            }
-        });
-    }
-
-    private string GetCardInnerText(int index, WebDriverWait wait)
-    {
-        var result = wait.Until(d =>
-        {
-            try
-            {
-                var cards = d.FindElements(jobCards);
-                if (cards.Count <= index)
-                {
+                    consecutiveStableReads = 0;
+                    lastObservedText = null;
                     return null;
                 }
 
-                var card = cards[index];
-                return ((IJavaScriptExecutor)d).ExecuteScript("return arguments[0].innerText;", card) as string;
+                var raw = ((IJavaScriptExecutor)d).ExecuteScript("return arguments[0].textContent;", card) as string;
+                var normalized = NormalizeWhitespace(raw);
+
+                if (string.IsNullOrWhiteSpace(normalized))
+                {
+                    consecutiveStableReads = 0;
+                    lastObservedText = null;
+                    return null;
+                }
+
+                if (string.Equals(lastObservedText, normalized, StringComparison.Ordinal))
+                {
+                    consecutiveStableReads++;
+                }
+                else
+                {
+                    lastObservedText = normalized;
+                    consecutiveStableReads = 0;
+                }
+
+                return consecutiveStableReads >= 1 ? normalized : null;
             }
             catch (StaleElementReferenceException)
             {
+                consecutiveStableReads  = 0;
+                lastObservedText  = null;
                 return null;
             }
         });
 
         if (result is null)
         {
-            throw new InvalidOperationException("Failed to get card inner text.");
+            throw new InvalidOperationException("Failed to get stable card full text.");
         }
 
         return result;
+    }
+
+    private static string NormalizeWhitespace(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return string.Join(" ", value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     }
 
     private IWebElement? GetCardByIndex(ISearchContext context, int index)

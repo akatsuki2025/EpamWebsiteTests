@@ -42,16 +42,7 @@ public class MainPage : BasePage
 
     public void ClickCareers()
     {
-        try
-        {
-            var careersLinkElement = Wait.Until(ExpectedConditions.ElementToBeClickable(careersLink));
-            careersLinkElement.Click();
-        }
-        catch (WebDriverTimeoutException)
-        {
-            ((ITakesScreenshot)Driver).GetScreenshot().SaveAsFile("careers_not_found.png");
-            throw;
-        }
+        WaitUntilClickable(careersLink).Click();
     }
 
     public void ClickInsights()
@@ -70,37 +61,12 @@ public class MainPage : BasePage
 
     public void ClickGlobalSearchButton()
     {
-        var button = Wait.Until(d =>
-            d.FindElements(globalSearchButton)
-             .FirstOrDefault(e => e.Displayed && e.Enabled));
-
-        ((IJavaScriptExecutor)Driver).ExecuteScript(
-            "arguments[0].scrollIntoView({block:'center', inline:'nearest'});",
-            button);
-
-        try
-        {
-            button.Click();
-        }
-        catch (ElementClickInterceptedException)
-        {
-            ((IJavaScriptExecutor)Driver).ExecuteScript("arguments[0].click();", button);
-        }
+        WaitUntilClickable(globalSearchButton).Click();
     }
 
     public void EnterGlobalSearchKeyword(string keyword)
     {
-        var searchInput = Wait.Until(d =>
-            d.FindElements(globalSearchInput).FirstOrDefault(e =>
-                e.Displayed &&
-                e.Enabled &&
-                !string.Equals(e.GetDomAttribute("type"), "hidden", StringComparison.OrdinalIgnoreCase)));
-
-        ((IJavaScriptExecutor)Driver).ExecuteScript(
-            "arguments[0].scrollIntoView({block:'center', inline:'nearest'});",
-            searchInput);
-
-        searchInput.Click();
+        var searchInput = Driver.FindElement(globalSearchInput);
         searchInput.SendKeys(Keys.Control + "a");
         searchInput.SendKeys(Keys.Delete);
         searchInput.SendKeys(keyword);
@@ -108,16 +74,12 @@ public class MainPage : BasePage
 
     public void ClickGlobalSearchSubmitButton()
     {
-        var submit = Wait.Until(d =>
-            d.FindElements(globalSearchSubmitButton)
-             .FirstOrDefault(e => e.Displayed && e.Enabled));
-
-        submit.Click();
+        WaitUntilClickable(globalSearchSubmitButton).Click();
     }
 
-    public IReadOnlyCollection<IWebElement> GetGlobalSearchResultLinks(WebDriverWait wait)
+    public IReadOnlyCollection<IWebElement> GetGlobalSearchResultLinks()
     {
-        return wait.Until(d =>
+        return Wait.Until(d =>
         {
             var links = d.FindElements(globalSearchResultLinks)
                 .Where(e => e.Displayed)
