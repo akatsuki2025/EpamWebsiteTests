@@ -1,4 +1,5 @@
 ﻿using OpenQA.Selenium;
+using OpenQA.Selenium.Interactions;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
 using System.Security.Cryptography.X509Certificates;
@@ -10,11 +11,12 @@ public class MainPage : BasePage
     private const string MainUrl = "https://www.epam.com/";
     private readonly By careersLink = By.LinkText("Careers");
     private readonly By insightsLink = By.LinkText("Insights");
-    private readonly By aboutLink = By.LinkText("About");
     private readonly By globalSearchButton = By.ClassName("header-search__button");
     private readonly By globalSearchInput = By.Name("q");
     private readonly By globalSearchSubmitButton = By.XPath("//button[contains(@class,'custom-search-button') and .//span[contains(text(),'Find')]]");
     private readonly By globalSearchResultLinks = By.CssSelector(".search-results__item a");
+    private readonly By footer = By.TagName("footer");
+    private readonly By codeOfEthicalConductPdfLink = By.LinkText("CODE OF ETHICAL CONDUCT (PDF)");
 
     public MainPage(IWebDriver driver) : base(driver)
     {
@@ -54,11 +56,6 @@ public class MainPage : BasePage
         link.Click();
     }
 
-    public void ClickAbout()
-    {
-        Driver.FindElement(aboutLink).Click();
-    }
-
     public void ClickGlobalSearchButton()
     {
         WaitUntilClickable(globalSearchButton).Click();
@@ -87,5 +84,19 @@ public class MainPage : BasePage
 
             return links.Count > 0 ? links : null;
         });
+    }
+
+    public void ScrollToFooter()
+    {
+        var footerElement = WaitUntilVisible(footer);
+
+        ((IJavaScriptExecutor)Driver).ExecuteScript(
+            "arguments[0].scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });",
+            footerElement);
+    }
+
+    public void ClickCodeOfEthicalConductPdf()
+    {
+        WaitUntilClickable(codeOfEthicalConductPdfLink).Click();
     }
 }

@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EpamWebsiteTests.BusinessLayer\EpamWebsiteTests.BusinessLayer.csproj" />
+    <ProjectReference Include="..\EpamWebsiteTests.BusinessLayer\EpamWebsite.Business.csproj" />
   </ItemGroup>
 
 </Project>
