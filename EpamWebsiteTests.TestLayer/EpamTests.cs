@@ -9,11 +9,34 @@ public class EpamTests : IDisposable
 {
     private readonly IWebDriver driver;
     private bool disposed = false;
+    private readonly string downloadDirectory;
 
     public EpamTests()
     {
-        driver = new ChromeDriver();
+        downloadDirectory = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "EpamDownloads",
+            DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fff"));
+
+        Directory.CreateDirectory(downloadDirectory);
+
+        var options = new ChromeOptions();
+        options.AddUserProfilePreference("download.default_directory", downloadDirectory);
+        options.AddUserProfilePreference("download.prompt_for_download", false);
+        options.AddUserProfilePreference("download.directory_upgrade", true);
+        options.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
+        options.AddUserProfilePreference("safebrowsing.enabled", true);
+
+        driver = new ChromeDriver(options);
         driver.Manage().Window.Maximize();
+
+        ((ChromeDriver)driver).ExecuteCdpCommand(
+            "Page.setDownloadBehavior",
+            new Dictionary<string, object>
+            {
+                ["behavior"] = "allow",
+                ["downloadPath"] = downloadDirectory
+            });
     }
 
     [Theory]
@@ -56,13 +79,19 @@ public class EpamTests : IDisposable
 
     [Theory]
     [InlineData("Code-Of-Conduct_01_26.pdf")]
-    public void DownloadFileTest(string fileName)
+    public async Task DownloadFileTest(string fileName)
     {
         var mainPage = new MainPage(driver);
 
         mainPage.Open();
-        mainPage.ScrollToFooter();
+      //  mainPage.ScrollToFooter();
         mainPage.ClickCodeOfEthicalConductPdf();
+        var downloadedPath = await BasePage.WaitForDownloadedFileAsync(
+                downloadDirectory,
+                fileName,
+                TimeSpan.FromSeconds(30));
+
+        Assert.Equal(fileName, Path.GetFileName(downloadedPath), ignoreCase: true);
     }
 
     [Theory]

@@ -16,7 +16,7 @@ public class MainPage : BasePage
     private readonly By globalSearchSubmitButton = By.XPath("//button[contains(@class,'custom-search-button') and .//span[contains(text(),'Find')]]");
     private readonly By globalSearchResultLinks = By.CssSelector(".search-results__item a");
     private readonly By footer = By.TagName("footer");
-    private readonly By codeOfEthicalConductPdfLink = By.LinkText("CODE OF ETHICAL CONDUCT (PDF)");
+    private readonly By codeOfEthicalConductPdfLink = By.CssSelector("footer a[href*='Code-Of-Conduct'][href$='.pdf']");
 
     public MainPage(IWebDriver driver) : base(driver)
     {
@@ -97,6 +97,27 @@ public class MainPage : BasePage
 
     public void ClickCodeOfEthicalConductPdf()
     {
-        WaitUntilClickable(codeOfEthicalConductPdfLink).Click();
+        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(20));
+
+        var link = wait.Until(d =>
+        {
+            var element = d.FindElements(codeOfEthicalConductPdfLink)
+                .FirstOrDefault(e => e.Displayed && e.Enabled);
+            return element;
+        }) ?? throw new NoSuchElementException("Visible Code Of Conduct PDF link was not found.");
+
+        ((IJavaScriptExecutor)Driver).ExecuteScript(
+            "arguments[0].scrollIntoView({ block: 'center', inline: 'nearest' });",
+            link);
+
+        try
+        {
+            wait.Until(_ => link.Displayed && link.Enabled);
+            link.Click();
+        }
+        catch (WebDriverException)
+        {
+            ((IJavaScriptExecutor)Driver).ExecuteScript("arguments[0].click();", link);
+        }
     }
 }

@@ -48,13 +48,30 @@ public class InsightsPage : BasePage
     public void ClickReadMoreButton()
     {
         var cta = GetActiveCtaElement();
+        var oldUrl = Driver.Url;
+        var oldHandles = Driver.WindowHandles;
 
         ((IJavaScriptExecutor)Driver).ExecuteScript(
-            "arguments[0].scrollIntoView({block:'end', inline:'nearest'});",
-            cta);
+            "arguments[0].scrollIntoView({block:'center', inline:'nearest'});", cta);
 
         Wait.Until(_ => cta.Displayed && cta.Enabled);
         cta.Click();
+
+        var navWait = new WebDriverWait(Driver, TimeSpan.FromSeconds(20));
+        navWait.Until(d =>
+        {
+            if (d.WindowHandles.Count > oldHandles.Count)
+            {
+                var newHandle = d.WindowHandles.Except(oldHandles).First();
+                d.SwitchTo().Window(newHandle);
+                return true;
+            }
+
+            return !string.Equals(d.Url, oldUrl, StringComparison.OrdinalIgnoreCase);
+        });
+
+        navWait.Until(d =>
+            ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState")?.ToString() == "complete");
     }
 
     private void ClickCarouselNextButton()

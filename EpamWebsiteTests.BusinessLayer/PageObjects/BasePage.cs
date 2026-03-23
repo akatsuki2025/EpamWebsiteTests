@@ -25,4 +25,48 @@ public abstract class BasePage
     {
         return Wait.Until(ExpectedConditions.ElementIsVisible(locator));
     }
+
+    public static async Task<string> WaitForDownloadedFileAsync(
+         string downloadDirectory,
+         string expectedFileName,
+         TimeSpan timeout,
+         CancellationToken cancellationToken = default)
+    {
+        var expectedBase = Path.GetFileNameWithoutExtension(expectedFileName);
+
+        static bool IsPartial(string path) =>
+            path.EndsWith(".crdownload", StringComparison.OrdinalIgnoreCase);
+
+        static bool IsNonEmpty(string path) =>
+            File.Exists(path) && new FileInfo(path).Length > 0;
+
+        var started = DateTime.UtcNow;
+
+        while (DateTime.UtcNow - started < timeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var files = Directory.EnumerateFiles(downloadDirectory).ToList();
+
+            var completedMatch = files.FirstOrDefault(path =>
+                !IsPartial(path) &&
+                Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase) &&
+                Path.GetFileNameWithoutExtension(path).Contains(expectedBase, StringComparison.OrdinalIgnoreCase) &&
+                IsNonEmpty(path));
+
+            if (completedMatch is not null)
+            {
+                return completedMatch;
+            }
+
+            await Task.Delay(250, cancellationToken);
+        }
+
+        var existing = Directory.Exists(downloadDirectory)
+            ? string.Join(", ", Directory.EnumerateFiles(downloadDirectory).Select(Path.GetFileName))
+            : "<directory missing>";
+
+        throw new TimeoutException(
+            $"File like '{expectedFileName}' was not downloaded within {timeout}. Found: {existing}");
+    }
 }
