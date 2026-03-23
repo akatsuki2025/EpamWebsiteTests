@@ -24,11 +24,6 @@ public class InsightsPage : BasePage
 
     public void SwipeCarouselNext(int swipeCount)
     {
-        if (swipeCount < 1)
-        {
-            throw new ArgumentOutOfRangeException(nameof(swipeCount));
-        }
-
         EnsureInsightsLoaded();
 
         for (int i = 0; i < swipeCount; i++)
@@ -318,27 +313,20 @@ public class InsightsPage : BasePage
     private IWebElement? FindCtaByHref(string href)
     {
         var root = GetCarouselRoot();
+        var links = root.FindElements(ctaBy);
 
-        return Wait.Until(_ =>
+        foreach (var link in links)
         {
-            var links = root.FindElements(ctaBy);
+            if (!IsUsableCta(link)) continue;
 
-            foreach (var link in links)
+            var currentHref = link.GetAttribute("href");
+            if (string.Equals(currentHref, href, StringComparison.OrdinalIgnoreCase))
             {
-                if (!IsUsableCta(link))
-                {
-                    continue;
-                }
-
-                var currentHref = link.GetAttribute("href");
-                if (string.Equals(currentHref, href, StringComparison.OrdinalIgnoreCase))
-                {
-                    return link;
-                }
+                return link;
             }
+        }
 
-            return null;
-        });
+        return null;
     }
 
     private bool IsUsableCta(IWebElement element)
