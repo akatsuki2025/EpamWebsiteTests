@@ -49,11 +49,7 @@ public class MainPage : BasePage
 
     public void ClickInsights()
     {
-        var link = Wait.Until(driver =>
-            driver.FindElements(insightsLink)
-                .FirstOrDefault(element => element.Displayed && element.Enabled));
-
-        link.Click();
+        WaitUntilClickable(insightsLink).Click();
     }
 
     public void ClickGlobalSearchButton()

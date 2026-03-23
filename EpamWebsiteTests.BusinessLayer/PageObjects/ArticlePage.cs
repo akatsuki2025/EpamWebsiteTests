@@ -1,7 +1,7 @@
-﻿using EpamWebsiteTests.BusinessLayer.PageObjects;
-using OpenQA.Selenium;
-using OpenQA.Selenium.Support.UI;
+﻿using OpenQA.Selenium;
 using System.Text.RegularExpressions;
+
+namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
 public class ArticlePage : BasePage
 {

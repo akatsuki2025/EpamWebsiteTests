@@ -32,7 +32,7 @@ public class EpamTests : IDisposable
 
         ((ChromeDriver)driver).ExecuteCdpCommand(
             "Page.setDownloadBehavior",
-            new Dictionary<string, object>
+            new Dictionary<string, object?>
             {
                 ["behavior"] = "allow",
                 ["downloadPath"] = downloadDirectory
@@ -81,15 +81,16 @@ public class EpamTests : IDisposable
     [InlineData("Code-Of-Conduct_01_26.pdf")]
     public async Task DownloadFileTest(string fileName)
     {
+        var cancellationToken = TestContext.Current.CancellationToken;
         var mainPage = new MainPage(driver);
 
         mainPage.Open();
-      //  mainPage.ScrollToFooter();
         mainPage.ClickCodeOfEthicalConductPdf();
         var downloadedPath = await BasePage.WaitForDownloadedFileAsync(
                 downloadDirectory,
                 fileName,
-                TimeSpan.FromSeconds(30));
+                TimeSpan.FromSeconds(30),
+                cancellationToken);
 
         Assert.Equal(fileName, Path.GetFileName(downloadedPath), ignoreCase: true);
     }
