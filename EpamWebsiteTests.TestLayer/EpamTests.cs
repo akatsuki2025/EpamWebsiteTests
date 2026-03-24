@@ -1,14 +1,14 @@
-﻿using EpamWebsiteTests.BusinessLayer.PageObjects;
+﻿using EpamWebsite.Core.WebDriver;
+using EpamWebsiteTests.BusinessLayer.PageObjects;
 using OpenQA.Selenium;
-using OpenQA.Selenium.Chrome;
 using Xunit;
 
 namespace EpamWebsiteTests.TestLayer;
 
-public class EpamTests : IDisposable
+public sealed class EpamTests : IDisposable
 {
+    private readonly WebDriverSession session;
     private readonly IWebDriver driver;
-    private bool disposed = false;
     private readonly string downloadDirectory;
 
     public EpamTests()
@@ -20,23 +20,9 @@ public class EpamTests : IDisposable
 
         Directory.CreateDirectory(downloadDirectory);
 
-        var options = new ChromeOptions();
-        options.AddUserProfilePreference("download.default_directory", downloadDirectory);
-        options.AddUserProfilePreference("download.prompt_for_download", false);
-        options.AddUserProfilePreference("download.directory_upgrade", true);
-        options.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
-        options.AddUserProfilePreference("safebrowsing.enabled", true);
-
-        driver = new ChromeDriver(options);
-        driver.Manage().Window.Maximize();
-
-        ((ChromeDriver)driver).ExecuteCdpCommand(
-            "Page.setDownloadBehavior",
-            new Dictionary<string, object?>
-            {
-                ["behavior"] = "allow",
-                ["downloadPath"] = downloadDirectory
-            });
+        session = WebDriverFactory.Create(BrowserType.Chrome, downloadDirectory);
+        session.StartBrowser();
+        driver = session.Driver;
     }
 
     [Theory]
@@ -114,23 +100,13 @@ public class EpamTests : IDisposable
         Assert.Equal(carouselTitle, articleTitle, ignoreCase: true);
     }
 
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!disposed)
-        {
-            if (disposing)
-            {
-                driver?.Quit();
-                driver?.Dispose();
-            }
-
-            disposed = true;
-        }
-    }
-
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+        session.Dispose();
+
+        if (Directory.Exists(downloadDirectory))
+        {
+            Directory.Delete(downloadDirectory, recursive: true);
+        }
     }
 }
