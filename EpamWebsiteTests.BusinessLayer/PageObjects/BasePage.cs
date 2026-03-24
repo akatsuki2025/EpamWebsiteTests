@@ -69,4 +69,19 @@ public abstract class BasePage
         throw new TimeoutException(
             $"File like '{expectedFileName}' was not downloaded within {timeout}. Found: {existing}");
     }
+
+    protected WebDriverWait CreateWait(int seconds, int pollingMs = 150, bool ignoreStale = true)
+    {
+        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(seconds))
+        {
+            PollingInterval = TimeSpan.FromMilliseconds(pollingMs)
+        };
+
+        if (ignoreStale)
+        {
+            wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
+        }
+
+        return wait;
+    }
 }

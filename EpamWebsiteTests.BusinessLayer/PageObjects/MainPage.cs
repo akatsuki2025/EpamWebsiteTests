@@ -19,7 +19,7 @@ public class MainPage : BasePage
     {
     }
 
-    public void Open()
+    public void OpenHomePageWithConsentCookie()
     {
         Driver.Navigate().GoToUrl(MainUrl);
 

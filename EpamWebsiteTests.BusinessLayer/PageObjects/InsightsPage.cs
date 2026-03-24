@@ -373,19 +373,4 @@ public class InsightsPage : BasePage
         text = text.Replace('\u00A0', ' ');
         return Regex.Replace(text, "\\s+", " ").Trim();
     }
-
-    private WebDriverWait CreateWait(int seconds, int pollingMs = 150, bool ignoreStale = true)
-    {
-        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(seconds))
-        {
-            PollingInterval = TimeSpan.FromMilliseconds(pollingMs)
-        };
-
-        if (ignoreStale)
-        {
-            wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
-        }
-
-        return wait;
-    }
 }
