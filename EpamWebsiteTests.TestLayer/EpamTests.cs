@@ -61,7 +61,7 @@ public class EpamTests : IDisposable
     }
 
     [Theory]
-    [InlineData( "BLOCKCHAIN")]
+    [InlineData("BLOCKCHAIN")]
     [InlineData("Cloud")]
     [InlineData("Automation")]
     public void GlobalSearchTest(string keyword)

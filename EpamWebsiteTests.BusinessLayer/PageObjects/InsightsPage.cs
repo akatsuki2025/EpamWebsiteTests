@@ -7,16 +7,17 @@ namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
 public class InsightsPage : BasePage
 {
-    private static readonly Regex CounterRegex = new(@"^\d{1,2}\s*/\s*\d{1,2}$", 
+    private static readonly Regex counterRegex = new(@"^\d{1,2}\s*/\s*\d{1,2}$",
         RegexOptions.Compiled);
-    private static readonly Regex ActionTextRegex = new(@"^(read(\s+the)?\s+(more|report)|learn\s+more|discover|explore|watch|view|see\s+more)$", 
+    private static readonly Regex actionTextRegex = new(@"^(read(\s+the)?\s+(more|report)|learn\s+more|discover|explore|watch|view|see\s+more)$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-    private readonly By nextArrowBy = By.CssSelector("button.slider__right-arrow.slider-navigation-arrow");
-    private readonly By ctaBy = By.CssSelector("a.slider-cta-link[href]");
+    private static readonly By nextArrowBy = By.CssSelector("button.slider__right-arrow.slider-navigation-arrow");
+    private static readonly By ctaBy = By.CssSelector("a.slider-cta-link[href]");
+    private static readonly By counterElementXPath = By.XPath(".//*[contains(normalize-space(.),'/')]");
+    private static readonly By ancestorRootXPath = By.XPath(
+        "./ancestor::*[.//a[contains(@class,'slider-cta-link')] and .//*[contains(@class,'slick-slide') or contains(@class,'single-slide')]][1]");
 
     private IWebElement? cachedRoot;
-    private string? lastCapturedArticleHref;
 
     public InsightsPage(IWebDriver driver) : base(driver)
     {
@@ -26,50 +27,17 @@ public class InsightsPage : BasePage
     {
         EnsureInsightsLoaded();
 
-        for (int i = 0; i < swipeCount; i++)
+        for (var i = 0; i < swipeCount; i++)
         {
-            var before = GetCarouselPosition();
-            var expectedCurrent = before.Current == before.Total ? 1 : before.Current + 1;
-
-            var next = GetClickableNextArrowButton();
-            Wait.Until(_ => next.Displayed && next.Enabled);
-
-            try
-            {
-                next.Click();
-            }
-            catch (ElementClickInterceptedException)
-            {
-                new Actions(Driver).MoveToElement(next).Click().Perform();
-            }
-
-            WaitForCounterValue(expectedCurrent, before.Total);
+            var expected = GetNextCarouselPosition();
+            ClickWithFallback(GetClickableNextArrowButton());
+            WaitForCounterValue(expected.Current, expected.Total);
         }
-    }
-
-    private void WaitForCounterValue(int expectedCurrent, int expectedTotal)
-    {
-        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(10))
-        {
-            PollingInterval = TimeSpan.FromMilliseconds(120)
-        };
-        wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
-
-        wait.Until(_ =>
-        {
-            var pos = GetCarouselPosition();
-            return pos.Total == expectedTotal && pos.Current == expectedCurrent;
-        });
     }
 
     public string GetActiveCarouselArticleTitle()
     {
-        EnsureInsightsLoaded();
-        WaitForCounterStable();
-
-        var cta = GetActiveCtaElement();
-        lastCapturedArticleHref = cta.GetAttribute("href");
-
+        var cta = GetPreparedActiveCta();
         var title = GetTitleForCta(cta);
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -81,52 +49,85 @@ public class InsightsPage : BasePage
 
     public void ClickReadMoreButton()
     {
+        var cta = GetPreparedActiveCta();
+        var state = CaptureNavigationState();
+
+        ClickWithFallback(cta);
+        WaitForNavigation(state);
+    }
+
+    private IWebElement GetPreparedActiveCta()
+    {
         EnsureInsightsLoaded();
         WaitForCounterStable();
+        return GetActiveCtaElement();
+    }
 
-        var oldUrl = Driver.Url;
-        var oldHandles = Driver.WindowHandles;
+    private void WaitForCounter(Func<(int Current, int Total), bool> condition, int timeoutSeconds = 10, int pollingMs = 150)
+    {
+        var wait = CreateWait(timeoutSeconds, pollingMs: pollingMs);
+        wait.Until(_ => condition(GetCarouselPosition()));
+    }
 
-        IWebElement cta;
-        if (!string.IsNullOrWhiteSpace(lastCapturedArticleHref))
+    private void WaitForCounterValue(int expectedCurrent, int expectedTotal)
+    {
+        WaitForCounter(pos => pos.Current == expectedCurrent && pos.Total == expectedTotal, timeoutSeconds: 10, pollingMs: 120);
+    }
+
+    private void WaitForCounterStable()
+    {
+        string? previous = null;
+
+        WaitForCounter(pos =>
         {
-            cta = FindCtaByHref(lastCapturedArticleHref!) ?? GetActiveCtaElement();
-        }
-        else
-        {
-            cta = GetActiveCtaElement();
-        }
+            var now = $"{pos.Current}/{pos.Total}";
+            var isStable = string.Equals(previous, now, StringComparison.Ordinal);
+            previous = now;
+            return isStable;
+        });
+    }
 
-        Wait.Until(_ => cta.Displayed && cta.Enabled);
+    private (int Current, int Total) GetNextCarouselPosition()
+    {
+        var position = GetCarouselPosition();
+        var nextCurrent = position.Current == position.Total ? 1 : position.Current + 1;
+        return (nextCurrent, position.Total);
+    }
+
+    private void ClickWithFallback(IWebElement element)
+    {
+        Wait.Until(_ => element.Displayed && element.Enabled);
 
         try
         {
-            cta.Click();
+            element.Click();
         }
         catch (ElementClickInterceptedException)
         {
-            new Actions(Driver).MoveToElement(cta).Pause(TimeSpan.FromMilliseconds(100)).Click().Perform();
+            new Actions(Driver).MoveToElement(element).Click().Perform();
         }
+    }
 
-        var navWait = new WebDriverWait(Driver, TimeSpan.FromSeconds(20))
-        {
-            PollingInterval = TimeSpan.FromMilliseconds(150)
-        };
-        navWait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
+    private (string Url, IReadOnlyCollection<string> Handles) CaptureNavigationState()
+    {
+        return (Driver.Url, Driver.WindowHandles);
+    }
 
-        navWait.Until(d =>
+    private void WaitForNavigation((string Url, IReadOnlyCollection<string> Handles) before)
+    {
+        var wait = CreateWait(20);
+
+        wait.Until(d =>
         {
-            if (d.WindowHandles.Count > oldHandles.Count)
+            if (d.WindowHandles.Count > before.Handles.Count)
             {
-                var newHandle = d.WindowHandles.Except(oldHandles).First();
+                var newHandle = d.WindowHandles.Except(before.Handles).First();
                 d.SwitchTo().Window(newHandle);
                 return true;
             }
 
-            return !string.Equals(d.Url, oldUrl, StringComparison.OrdinalIgnoreCase);
+            return !string.Equals(d.Url, before.Url, StringComparison.OrdinalIgnoreCase);
         });
-
-        lastCapturedArticleHref = null;
     }
 
     private void EnsureInsightsLoaded()
@@ -137,21 +138,16 @@ public class InsightsPage : BasePage
 
     private IWebElement GetCarouselRoot()
     {
-        if (TryGetCachedRoot(out var cached))
+        if (TryGetValidCachedRoot(out var cached))
         {
             return cached;
         }
 
-        cachedRoot = Wait.Until(driver =>
-        {
-            var arrow = FindVisibleArrowWithValidRoot(driver);
-            return arrow == null ? null : FindValidRootFromArrow(arrow);
-        });
-
+        cachedRoot = Wait.Until(driver => FindValidRootFromVisibleArrows(driver));
         return cachedRoot ?? throw new NoSuchElementException("Featured stories carousel root not found.");
     }
 
-    private bool TryGetCachedRoot(out IWebElement root)
+    private bool TryGetValidCachedRoot(out IWebElement root)
     {
         root = null!;
 
@@ -177,44 +173,33 @@ public class InsightsPage : BasePage
         }
     }
 
-    private IWebElement? FindVisibleArrowWithValidRoot(IWebDriver driver)
+    private static IWebElement? FindValidRootFromVisibleArrows(IWebDriver driver)
     {
-        foreach (var arrow in driver.FindElements(nextArrowBy))
-        {
-            if (!arrow.Displayed)
-            {
-                continue;
-            }
+        var arrows = driver.FindElements(nextArrowBy).Where(a => a.Displayed);
 
-            var root = FindValidRootFromArrow(arrow);
-            if (root != null)
+        foreach (var arrow in arrows)
+        {
+            var root = arrow.FindElements(ancestorRootXPath).FirstOrDefault();
+
+            if (IsValidCarouselRoot(root))
             {
-                return arrow;
+                return root;
             }
         }
 
         return null;
     }
 
-    private IWebElement? FindValidRootFromArrow(IWebElement arrow)
+    private static bool IsValidCarouselRoot(IWebElement? root)
     {
-        var root = arrow.FindElements(By.XPath(
-                "./ancestor::*[.//a[contains(@class,'slider-cta-link')] and .//*[contains(@class,'slick-slide') or contains(@class,'single-slide')]][1]"))
-            .FirstOrDefault();
-
         if (root == null || !root.Displayed)
         {
-            return null;
+            return false;
         }
 
-        return HasCounter(root) ? root : null;
-    }
-
-    private bool HasCounter(IWebElement root)
-    {
-        return root.FindElements(By.XPath(".//*[contains(normalize-space(.),'/')]"))
+        return root.FindElements(counterElementXPath)
             .Select(e => Normalize(e.Text))
-            .Any(t => CounterRegex.IsMatch(t));
+            .Any(t => counterRegex.IsMatch(t));
     }
 
     private IWebElement GetClickableNextArrowButton()
@@ -232,9 +217,9 @@ public class InsightsPage : BasePage
 
         var counterText = Wait.Until(_ =>
         {
-            var candidate = root.FindElements(By.XPath(".//*[contains(normalize-space(.),'/')]"))
+            var candidate = root.FindElements(counterElementXPath)
                 .Select(e => Normalize(e.Text))
-                .FirstOrDefault(t => CounterRegex.IsMatch(t));
+                .FirstOrDefault(t => counterRegex.IsMatch(t));
 
             return candidate;
         });
@@ -255,81 +240,18 @@ public class InsightsPage : BasePage
         return (current, total);
     }
 
-    private void WaitForCounterStable()
-    {
-        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(10))
-        {
-            PollingInterval = TimeSpan.FromMilliseconds(150)
-        };
-        wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
-
-        string? first = null;
-        wait.Until(_ =>
-        {
-            var pos = GetCarouselPosition();
-            var now = $"{pos.Current}/{pos.Total}";
-
-            if (first == null)
-            {
-                first = now;
-                return false;
-            }
-
-            return string.Equals(first, now, StringComparison.Ordinal);
-        });
-    }
-
     private IWebElement GetActiveCtaElement()
     {
         var root = GetCarouselRoot();
 
         return Wait.Until(_ =>
         {
-            var links = root.FindElements(ctaBy);
-
-            IWebElement? preferred = null;
-            IWebElement? fallback = null;
-
-            foreach (var link in links)
-            {
-                if (!IsUsableCta(link))
-                {
-                    continue;
-                }
-
-                fallback ??= link;
-
-                if (IsInsideActiveSlide(link))
-                {
-                    preferred = link;
-                    break;
-                }
-            }
-
-            return preferred ?? fallback;
+            var usable = root.FindElements(ctaBy).Where(IsUsableCta).ToList();
+            return usable.FirstOrDefault(IsInsideActiveSlide) ?? usable.FirstOrDefault();
         }) ?? throw new NoSuchElementException("No usable Read More link found in carousel.");
     }
 
-    private IWebElement? FindCtaByHref(string href)
-    {
-        var root = GetCarouselRoot();
-        var links = root.FindElements(ctaBy);
-
-        foreach (var link in links)
-        {
-            if (!IsUsableCta(link)) continue;
-
-            var currentHref = link.GetAttribute("href");
-            if (string.Equals(currentHref, href, StringComparison.OrdinalIgnoreCase))
-            {
-                return link;
-            }
-        }
-
-        return null;
-    }
-
-    private bool IsUsableCta(IWebElement element)
+    private static bool IsUsableCta(IWebElement element)
     {
         if (!element.Displayed || !element.Enabled)
         {
@@ -345,7 +267,7 @@ public class InsightsPage : BasePage
         return !insideCloned;
     }
 
-    private bool IsInsideActiveSlide(IWebElement cta)
+    private static bool IsInsideActiveSlide(IWebElement cta)
     {
         return cta.FindElements(By.XPath(
             "./ancestor::*[(contains(@class,'slick-active') or @aria-hidden='false') and not(contains(@class,'slick-cloned'))]"))
@@ -355,32 +277,14 @@ public class InsightsPage : BasePage
     private string GetTitleForCta(IWebElement cta)
     {
         var scope = GetCardContainerForCta(cta);
-
-        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(6))
-        {
-            PollingInterval = TimeSpan.FromMilliseconds(150)
-        };
-        wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
+        var wait = CreateWait(6);
 
         var title = wait.Until(_ =>
         {
-            var candidates = scope.FindElements(By.XPath(
-                ".//*[self::h1 or self::h2 or self::h3 or self::p or self::div or self::span or contains(@class,'scaling-of-text-wrapper') or contains(@class,'font-size-')]"));
+            var candidates = GetTitleCandidates(scope);
 
-            var best = candidates
-                .Where(e => e.Displayed)
-                .Select(e => new
-                {
-                    Element = e,
-                    Text = Normalize(e.Text)
-                })
-                .Where(x =>
-                    IsLikelyTitleText(x.Text) &&
-                    x.Element.FindElements(By.XPath("./ancestor::a|./ancestor::button")).Count == 0)
-                .OrderByDescending(x => ScoreTitleCandidate(x.Element, x.Text))
-                .FirstOrDefault();
-
-            return best?.Text;
+            return TryGetClassBasedTitle(candidates)
+                ?? TryGetLongestTitle(candidates);
         });
 
         if (!string.IsNullOrWhiteSpace(title))
@@ -389,6 +293,36 @@ public class InsightsPage : BasePage
         }
 
         throw new NoSuchElementException("Title element not found for CTA card.");
+    }
+
+    private static List<(IWebElement Element, string Text)> GetTitleCandidates(IWebElement scope)
+    {
+        return scope
+            .FindElements(By.XPath(
+                ".//*[self::h1 or self::h2 or self::h3 or self::p or self::div or self::span or contains(@class,'scaling-of-text-wrapper') or contains(@class,'font-size-')]"))
+            .Where(e => e.Displayed && e.FindElements(By.XPath("./ancestor::a|./ancestor::button")).Count == 0)
+            .Select(e => (Element: e, Text: Normalize(e.Text)))
+            .Where(x => IsLikelyTitleText(x.Text))
+            .ToList();
+    }
+
+    private static string? TryGetClassBasedTitle(IEnumerable<(IWebElement Element, string Text)> candidates)
+    {
+        return candidates
+            .FirstOrDefault(x =>
+            {
+                var cls = (x.Element.GetAttribute("class") ?? string.Empty).ToLowerInvariant();
+                return cls.Contains("scaling-of-text-wrapper") || cls.Contains("font-size-");
+            })
+            .Text;
+    }
+
+    private static string? TryGetLongestTitle(IEnumerable<(IWebElement Element, string Text)> candidates)
+    {
+        return candidates
+            .OrderByDescending(x => x.Text.Length)
+            .FirstOrDefault()
+            .Text;
     }
 
     private IWebElement GetCardContainerForCta(IWebElement cta)
@@ -415,39 +349,12 @@ public class InsightsPage : BasePage
         return root;
     }
 
-    private int ScoreTitleCandidate(IWebElement element, string text)
-    {
-        if (!IsLikelyTitleText(text))
-        {
-            return 0;
-        }
-
-        var score = 0;
-
-        var tag = (element.TagName ?? string.Empty).ToLowerInvariant();
-        if (tag == "h1") score += 300;
-        else if (tag == "h2") score += 260;
-        else if (tag == "h3") score += 220;
-        else if (tag == "p") score += 120;
-
-        var cls = (element.GetAttribute("class") ?? string.Empty).ToLowerInvariant();
-        if (cls.Contains("scaling-of-text-wrapper")) score += 280;
-        if (cls.Contains("font-size-")) score += 220;
-
-        score += Math.Min(text.Length, 120);
-
-        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
-        if (words < 3) score -= 120;
-
-        return score;
-    }
-
-    private bool IsLikelyTitleText(string text)
+    private static bool IsLikelyTitleText(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
         if (text.Length < 12) return false;
-        if (CounterRegex.IsMatch(text)) return false;
-        if (ActionTextRegex.IsMatch(text)) return false;
+        if (counterRegex.IsMatch(text)) return false;
+        if (actionTextRegex.IsMatch(text)) return false;
         if (text.StartsWith("Read ", StringComparison.OrdinalIgnoreCase)) return false;
         if (text.StartsWith("Learn ", StringComparison.OrdinalIgnoreCase)) return false;
         if (string.Equals(text, "undefined", StringComparison.OrdinalIgnoreCase)) return false;
@@ -465,5 +372,20 @@ public class InsightsPage : BasePage
 
         text = text.Replace('\u00A0', ' ');
         return Regex.Replace(text, "\\s+", " ").Trim();
+    }
+
+    private WebDriverWait CreateWait(int seconds, int pollingMs = 150, bool ignoreStale = true)
+    {
+        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(seconds))
+        {
+            PollingInterval = TimeSpan.FromMilliseconds(pollingMs)
+        };
+
+        if (ignoreStale)
+        {
+            wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
+        }
+
+        return wait;
     }
 }

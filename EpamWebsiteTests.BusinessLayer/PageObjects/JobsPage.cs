@@ -182,8 +182,8 @@ public class JobsPage : BasePage
             }
             catch (StaleElementReferenceException)
             {
-                consecutiveStableReads  = 0;
-                lastObservedText  = null;
+                consecutiveStableReads = 0;
+                lastObservedText = null;
                 return null;
             }
         });
