@@ -14,9 +14,18 @@ public abstract class UiTestBase : IDisposable
     protected readonly string DownloadDirectory;
     protected readonly string ScreenshotDirectory;
 
+    static class LoggerShutdown
+    {
+        static LoggerShutdown()
+        {
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => Logger.CloseAndFlush();
+        }
+    }
+
     static UiTestBase()
     {
         Logger.InitLogger();
+        var _ = typeof(LoggerShutdown);
     }
 
     protected UiTestBase()
@@ -97,8 +106,6 @@ public abstract class UiTestBase : IDisposable
                 Directory.Delete(ScreenshotDirectory, recursive: false);
             }
         }
-
-        Logger.CloseAndFlush();
 
         disposed = true;
     }

@@ -1,4 +1,5 @@
 ﻿using OpenQA.Selenium;
+using Serilog;
 
 namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
@@ -12,7 +13,7 @@ public class CareersPage : BasePage
 
     public void ClickStartJobSearch()
     {
-        var searchButton = WaitUntilClickable(startJobSearchButton);
-        searchButton.Click();
+        Log.Information("Clicking 'Start Your Search Here' button.");
+        WaitUntilClickable(startJobSearchButton).Click();
     }
 }

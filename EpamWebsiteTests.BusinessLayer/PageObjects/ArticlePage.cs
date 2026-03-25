@@ -1,5 +1,6 @@
 ﻿using OpenQA.Selenium;
 using System.Text.RegularExpressions;
+using Serilog;
 
 namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
@@ -7,23 +8,17 @@ public class ArticlePage : BasePage
 {
     public ArticlePage(IWebDriver driver) : base(driver) { }
 
-    private static string Normalize(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
-        return Regex.Replace(text, "\\s+", " ").Trim();
-    }
-
     public string GetArticleTitle()
     {
+        Log.Information("Attempting to get article title from the page.");
+
         Wait.Until(d =>
             ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState")?.ToString() == "complete");
 
         var titleSelectors = new[]
         {
             "main h1, article h1, h1",
-            ".single-section-full-width__content-container .scaling-of-text-wrapper",
-            ".single-section-full-width__content-container .text-ui-23 p",
-            ".single-section-full-width__content-container .font-size-80-33"
+            ".single-section-full-width__content-container .scaling-of-text-wrapper"
         };
 
         var title = Wait.Until(d =>
@@ -35,7 +30,6 @@ public class ArticlePage : BasePage
                 var element = d.FindElements(By.CssSelector(selector))
                     .FirstOrDefault(e => e.Displayed);
 
-                // just use element.Text;
                 if (element == null)
                 {
                     continue;
@@ -48,6 +42,7 @@ public class ArticlePage : BasePage
                 var normalized = Normalize(raw ?? string.Empty);
                 if (!string.IsNullOrWhiteSpace(normalized))
                 {
+                    Log.Information("Found article title using selector '{Selector}': {Title}", selector, normalized);
                     return normalized;
                 }
             }
@@ -57,7 +52,7 @@ public class ArticlePage : BasePage
 
         if (string.IsNullOrWhiteSpace(title))
         {
-            throw new NoSuchElementException("Article title not found.");
+            Log.Error("Article title not found using any of the selectors.");
         }
 
         return title;

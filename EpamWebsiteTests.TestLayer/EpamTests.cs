@@ -42,6 +42,7 @@ public class EpamTests : UiTestBase
     {
         RunWithLogging(() =>
         {
+            Log.Information($"[TEST START] GlobalSearchTest with keyword='{keyword}'");
             var mainPage = new MainPage(Driver);
 
             mainPage.OpenHomePageWithConsentCookie();
@@ -50,7 +51,9 @@ public class EpamTests : UiTestBase
             mainPage.ClickGlobalSearchSubmitButton();
             var links = mainPage.GetGlobalSearchResultLinks();
 
+            Log.Information("Asserting all links contain the keyword.");
             Assert.All(links, link => Assert.Contains(keyword, link.Text, StringComparison.OrdinalIgnoreCase));
+            Log.Information("[TEST END] GlobalSearchTest passed.");
         }, nameof(GlobalSearchTest));
     }
 
@@ -70,7 +73,7 @@ public class EpamTests : UiTestBase
             var downloadedPath = await BasePage.WaitForDownloadedFileAsync(
                     DownloadDirectory,
                     fileName,
-                    TimeSpan.FromSeconds(30),
+                    TimeSpan.FromSeconds(20),
                     cancellationToken);
 
             Log.Information($"Downloaded file path: {downloadedPath}");
@@ -87,6 +90,8 @@ public class EpamTests : UiTestBase
     {
         RunWithLogging(() =>
         {
+            Log.Information("[TEST START] CarouselArticleTitleMatchesDetailPageTest with swipeCount={SwipeCount}", swipeCount);
+
             var mainPage = new MainPage(Driver);
             var insightsPage = new InsightsPage(Driver);
             var articlePage = new ArticlePage(Driver);
@@ -98,7 +103,9 @@ public class EpamTests : UiTestBase
             insightsPage.ClickReadMoreButton();
             var articleTitle = articlePage.GetArticleTitle();
 
+            Log.Information("Comparing carousel title and article title. Carousel: '{CarouselTitle}', Article: '{ArticleTitle}'", carouselTitle, articleTitle);
             Assert.Equal(carouselTitle, articleTitle, ignoreCase: true);
+            Log.Information("[TEST END] CarouselArticleTitleMatchesDetailPageTest passed.");
         }, nameof(CarouselArticleTitleMatchesDetailPageTest));
     }
 }

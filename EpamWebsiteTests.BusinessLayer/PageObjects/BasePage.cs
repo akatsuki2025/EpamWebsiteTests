@@ -1,6 +1,8 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
+using System.Text.RegularExpressions;
+using Serilog;
 
 namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
@@ -83,5 +85,18 @@ public abstract class BasePage
         }
 
         return wait;
+    }
+
+    protected static string Normalize(string text)
+    {
+        Log.Debug("Normalize called for text: {Text}", text);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        var normalized = Regex.Replace(text, "\\s+", " ").Trim();
+        Log.Debug("Normalized text: {Normalized}", normalized);
+        return normalized;
     }
 }

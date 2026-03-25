@@ -1,7 +1,7 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Interactions;
-using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
+using Serilog;
 
 namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
@@ -24,10 +24,15 @@ public class JobsPage : BasePage
     private static By GetWorkplaceTypeLabelBy(string workType) =>
         By.XPath($"//input[@name='vacancy_type-{workType}']/following-sibling::label");
 
-    public void EnterKeyword(string keyword) => Driver.FindElement(keywordInput).SendKeys(keyword);
+    public void EnterKeyword(string keyword)
+    {
+        Log.Information("Entering keyword: {Keyword}", keyword);
+        Driver.FindElement(keywordInput).SendKeys(keyword);
+    }
 
     public void SelectLocation(string location)
     {
+        Log.Information("Selecting location: {Location}", location);
         ClearLocationSelection();
 
         if (location == "All Locations")
@@ -42,6 +47,7 @@ public class JobsPage : BasePage
 
     public void SelectWorkplaceType(string workType)
     {
+        Log.Information("Selecting workplace type: {WorkType}", workType);
         if (!validWorkTypes.Contains(workType))
         {
             throw new ArgumentException($"Invalid work type: {workType}. Valid options are: {string.Join(", ", validWorkTypes)}");
@@ -54,36 +60,43 @@ public class JobsPage : BasePage
 
     public void ClickSearchAndWaitForResults()
     {
+        Log.Information("Clicking search button and waiting for results.");
         WaitUntilClickable(searchButton).Click();
         WaitForResultsRefresh();
     }
 
     public string? ExpandAndGetLastCardText()
     {
+        Log.Information("Expanding and getting last job card text.");
         int? lastIndex = GetLastCardIndex();
         if (lastIndex == null)
         {
+            Log.Warning("No job cards found.");
             return null;
         }
 
         ExpandCardAndWaitUntilOpened(lastIndex.Value);
         var fullText = WaitForStableCardText(lastIndex.Value);
-        return string.IsNullOrWhiteSpace(fullText) ? null : fullText;
+        Log.Information("Retrieved text from last job card.");
+        return fullText;
     }
 
     private void ClearLocationSelection()
     {
+        Log.Debug("Clearing location selection.");
         WaitUntilClickable(locationInputClearButton).Click();
     }
 
     private void OpenLocationDropdown()
     {
+        Log.Debug("Opening location dropdown.");
         WaitUntilClickable(locationInput).Click();
         WaitUntilVisible(locationDropdownOption);
     }
 
     private int? GetLastCardIndex()
     {
+        Log.Debug("Getting last card index.");
         var cards = Driver.FindElements(jobCards);
         if (cards.Count == 0)
         {
@@ -95,10 +108,12 @@ public class JobsPage : BasePage
 
     private void WaitForResultsRefresh()
     {
+        Log.Debug("Waiting for results to refresh.");
         var firstCard = Driver.FindElements(jobCards).FirstOrDefault();
 
         if (firstCard != null)
         {
+            Log.Debug("Waiting for staleness of first card.");
             Wait.Until(ExpectedConditions.StalenessOf(firstCard));
         }
 
@@ -111,13 +126,15 @@ public class JobsPage : BasePage
 
     private void ExpandCardAndWaitUntilOpened(int index)
     {
-        Wait.Until(d =>
+        Log.Debug("Expanding card at index {Index}.", index);
+        bool expanded = Wait.Until(d =>
         {
             try
             {
                 var card = GetCardByIndex(d, index);
                 if (card == null)
                 {
+                    Log.Debug("Card at index {Index} not found.", index);
                     return false;
                 }
 
@@ -126,6 +143,7 @@ public class JobsPage : BasePage
 
                 if (!isOpened)
                 {
+                    Log.Debug("Card not opened. Clicking to expand.");
                     ((IJavaScriptExecutor)d).ExecuteScript("arguments[0].click();", card);
 
                     classAttribute = card.GetAttribute("class") ?? string.Empty;
@@ -136,13 +154,24 @@ public class JobsPage : BasePage
             }
             catch (StaleElementReferenceException)
             {
+                Log.Debug("StaleElementReferenceException caught while expanding card.");
                 return false;
             }
         });
+
+        if (expanded)
+        {
+            Log.Debug("Card at index {Index} successfully expanded.", index);
+        }
+        else
+        {
+            Log.Error("Failed to expand card at index {Index}.", index);
+        }
     }
 
-    private string WaitForStableCardText(int index)
+    private string? WaitForStableCardText(int index)
     {
+        Log.Debug("Waiting for stable text in card at index {Index}.", index);
         string? lastObservedText = null;
         int consecutiveStableReads = 0;
 
@@ -153,6 +182,7 @@ public class JobsPage : BasePage
                 var card = GetCardByIndex(d, index);
                 if (card == null)
                 {
+                    Log.Debug("Card at index {Index} not found.", index);
                     consecutiveStableReads = 0;
                     lastObservedText = null;
                     return null;
@@ -163,6 +193,7 @@ public class JobsPage : BasePage
 
                 if (string.IsNullOrWhiteSpace(normalized))
                 {
+                    Log.Debug("Card text is empty or whitespace.");
                     consecutiveStableReads = 0;
                     lastObservedText = null;
                     return null;
@@ -182,6 +213,7 @@ public class JobsPage : BasePage
             }
             catch (StaleElementReferenceException)
             {
+                Log.Debug("StaleElementReferenceException caught while reading card text.");
                 consecutiveStableReads = 0;
                 lastObservedText = null;
                 return null;
@@ -190,7 +222,7 @@ public class JobsPage : BasePage
 
         if (result is null)
         {
-            throw new InvalidOperationException("Failed to get stable card full text.");
+            Log.Error("Failed to get stable card full text at index {Index}.", index);
         }
 
         return result;
