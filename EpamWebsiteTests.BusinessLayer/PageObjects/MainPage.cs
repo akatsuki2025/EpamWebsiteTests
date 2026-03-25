@@ -1,5 +1,6 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
+using Serilog;
 
 namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
@@ -12,7 +13,6 @@ public class MainPage : BasePage
     private readonly By globalSearchInput = By.Name("q");
     private readonly By globalSearchSubmitButton = By.XPath("//button[contains(@class,'custom-search-button') and .//span[contains(text(),'Find')]]");
     private readonly By globalSearchResultLinks = By.CssSelector(".search-results__item a");
-    private readonly By footer = By.TagName("footer");
     private readonly By codeOfEthicalConductPdfLink = By.CssSelector("footer a[href*='Code-Of-Conduct'][href$='.pdf']");
 
     public MainPage(IWebDriver driver) : base(driver)
@@ -21,11 +21,13 @@ public class MainPage : BasePage
 
     public void OpenHomePageWithConsentCookie()
     {
+        Log.Information("Navigating to main page: {MainUrl}", MainUrl);
         Driver.Navigate().GoToUrl(MainUrl);
 
         Wait.Until(d =>
             ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState")?.ToString() == "complete");
 
+        Log.Information("Adding consent cookie.");
         Driver.Manage().Cookies.AddCookie(new Cookie(
             "OptanonAlertBoxClosed",
             DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
@@ -41,21 +43,25 @@ public class MainPage : BasePage
 
     public void ClickCareers()
     {
+        Log.Information("Clicking Careers link.");
         WaitUntilClickable(careersLink).Click();
     }
 
     public void ClickInsights()
     {
+        Log.Information("Clicking Insights link.");
         WaitUntilClickable(insightsLink).Click();
     }
 
     public void ClickGlobalSearchButton()
     {
+        Log.Information("Clicking global search button.");
         WaitUntilClickable(globalSearchButton).Click();
     }
 
     public void EnterGlobalSearchKeyword(string keyword)
     {
+        Log.Information("Entering global search keyword: {Keyword}", keyword);
         var searchInput = Driver.FindElement(globalSearchInput);
         searchInput.SendKeys(Keys.Control + "a");
         searchInput.SendKeys(Keys.Delete);
@@ -64,11 +70,13 @@ public class MainPage : BasePage
 
     public void ClickGlobalSearchSubmitButton()
     {
+        Log.Information("Clicking global search submit button.");
         WaitUntilClickable(globalSearchSubmitButton).Click();
     }
 
     public IReadOnlyCollection<IWebElement> GetGlobalSearchResultLinks()
     {
+        Log.Information("Getting global search result links.");
         return Wait.Until(d =>
         {
             var links = d.FindElements(globalSearchResultLinks)
@@ -79,38 +87,28 @@ public class MainPage : BasePage
         });
     }
 
-    public void ScrollToFooter()
+    public void ScrollToElement(IWebElement element)
     {
-        var footerElement = WaitUntilVisible(footer);
-
+        Log.Information("Scrolling to {Element}.", element.Text);
         ((IJavaScriptExecutor)Driver).ExecuteScript(
-            "arguments[0].scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });",
-            footerElement);
+            "arguments[0].scrollIntoView({ block: 'center', inline: 'nearest' });",
+            element);
     }
 
     public void ClickCodeOfEthicalConductPdf()
     {
-        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(20));
+        Log.Information("Clicking Code of Ethical Conduct PDF link.");
 
-        var link = wait.Until(d =>
+        var link = Wait.Until(d =>
         {
             var element = d.FindElements(codeOfEthicalConductPdfLink)
                 .FirstOrDefault(e => e.Displayed && e.Enabled);
             return element;
-        }) ?? throw new NoSuchElementException("Visible Code Of Conduct PDF link was not found.");
+        });
 
-        ((IJavaScriptExecutor)Driver).ExecuteScript(
-            "arguments[0].scrollIntoView({ block: 'center', inline: 'nearest' });",
-            link);
+        ScrollToElement(link);
 
-        try
-        {
-            wait.Until(_ => link.Displayed && link.Enabled);
-            link.Click();
-        }
-        catch (WebDriverException)
-        {
-            ((IJavaScriptExecutor)Driver).ExecuteScript("arguments[0].click();", link);
-        }
+        Wait.Until(_ => link.Displayed && link.Enabled);
+        link.Click();
     }
 }

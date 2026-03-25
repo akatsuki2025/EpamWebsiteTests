@@ -275,7 +275,7 @@ public class InsightsPage : BasePage
     }
 
     private string GetTitleForCta(IWebElement cta)
-    {
+    { // validate title is not null
         var scope = GetCardContainerForCta(cta);
         var wait = CreateWait(6);
 

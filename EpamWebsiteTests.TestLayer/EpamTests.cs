@@ -1,7 +1,6 @@
-﻿using EpamWebsite.Core.WebDriver;
-using EpamWebsiteTests.BusinessLayer.PageObjects;
-using OpenQA.Selenium;
+﻿using EpamWebsiteTests.BusinessLayer.PageObjects;
 using Xunit;
+using Serilog;
 
 namespace EpamWebsiteTests.TestLayer;
 
@@ -12,20 +11,27 @@ public class EpamTests : UiTestBase
     [InlineData("Python", "Croatia", "Office")]
     public void SearchPositionTest(string keyword, string location, string workplaceType)
     {
-        var mainPage = new MainPage(Driver);
-        var careersPage = new CareersPage(Driver);
-        var jobsPage = new JobsPage(Driver);
+        RunWithLogging(() =>
+        {
+            Log.Information($"[TEST START] SearchPositionTest with keyword='{keyword}', location='{location}', workplaceType='{workplaceType}'");
 
-        mainPage.OpenHomePageWithConsentCookie();
-        mainPage.ClickCareers();
-        careersPage.ClickStartJobSearch();
-        jobsPage.EnterKeyword(keyword);
-        jobsPage.SelectLocation(location);
-        jobsPage.SelectWorkplaceType(workplaceType);
-        jobsPage.ClickSearchAndWaitForResults();
-        string? jobCardText = jobsPage.ExpandAndGetLastCardText();
+            var mainPage = new MainPage(Driver);
+            var careersPage = new CareersPage(Driver);
+            var jobsPage = new JobsPage(Driver);
 
-        Assert.Contains(keyword, jobCardText ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+            mainPage.OpenHomePageWithConsentCookie();
+            mainPage.ClickCareers();
+            careersPage.ClickStartJobSearch();
+            jobsPage.EnterKeyword(keyword);
+            jobsPage.SelectLocation(location);
+            jobsPage.SelectWorkplaceType(workplaceType);
+            jobsPage.ClickSearchAndWaitForResults();
+            string? jobCardText = jobsPage.ExpandAndGetLastCardText();
+
+            Log.Information("Asserting that job card contains the keyword.");
+            Assert.Contains(keyword, jobCardText ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+            Log.Information("[TEST END] SearchPositionTest passed.");
+        }, nameof(SearchPositionTest));
     }
 
     [Theory]
@@ -34,33 +40,44 @@ public class EpamTests : UiTestBase
     [InlineData("Automation")]
     public void GlobalSearchTest(string keyword)
     {
-        var mainPage = new MainPage(Driver);
+        RunWithLogging(() =>
+        {
+            var mainPage = new MainPage(Driver);
 
-        mainPage.OpenHomePageWithConsentCookie();
-        mainPage.ClickGlobalSearchButton();
-        mainPage.EnterGlobalSearchKeyword(keyword);
-        mainPage.ClickGlobalSearchSubmitButton();
-        var links = mainPage.GetGlobalSearchResultLinks();
+            mainPage.OpenHomePageWithConsentCookie();
+            mainPage.ClickGlobalSearchButton();
+            mainPage.EnterGlobalSearchKeyword(keyword);
+            mainPage.ClickGlobalSearchSubmitButton();
+            var links = mainPage.GetGlobalSearchResultLinks();
 
-        Assert.All(links, link => Assert.Contains(keyword, link.Text, StringComparison.OrdinalIgnoreCase));
+            Assert.All(links, link => Assert.Contains(keyword, link.Text, StringComparison.OrdinalIgnoreCase));
+        }, nameof(GlobalSearchTest));
     }
 
     [Theory]
     [InlineData("Code-Of-Conduct_01_26.pdf")]
     public async Task DownloadFileTest(string fileName)
     {
-        var cancellationToken = TestContext.Current.CancellationToken;
-        var mainPage = new MainPage(Driver);
+        await RunWithLoggingAsync(async () =>
+        {
+            Log.Information($"[TEST START] DownloadFileTest with fileName='{fileName}'");
 
-        mainPage.OpenHomePageWithConsentCookie();
-        mainPage.ClickCodeOfEthicalConductPdf();
-        var downloadedPath = await BasePage.WaitForDownloadedFileAsync(
-                DownloadDirectory,
-                fileName,
-                TimeSpan.FromSeconds(30),
-                cancellationToken);
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var mainPage = new MainPage(Driver);
 
-        Assert.Equal(fileName, Path.GetFileName(downloadedPath), ignoreCase: true);
+            mainPage.OpenHomePageWithConsentCookie();
+            mainPage.ClickCodeOfEthicalConductPdf();
+            var downloadedPath = await BasePage.WaitForDownloadedFileAsync(
+                    DownloadDirectory,
+                    fileName,
+                    TimeSpan.FromSeconds(30),
+                    cancellationToken);
+
+            Log.Information($"Downloaded file path: {downloadedPath}");
+            Log.Information("Asserting downloaded file name matches expected.");
+            Assert.Equal(fileName, Path.GetFileName(downloadedPath), ignoreCase: true);
+            Log.Information("[TEST END] DownloadFileTest passed.");
+        }, nameof(DownloadFileTest));
     }
 
     [Theory]
@@ -68,17 +85,20 @@ public class EpamTests : UiTestBase
     [InlineData(1)]
     public void CarouselArticleTitleMatchesDetailPageTest(int swipeCount)
     {
-        var mainPage = new MainPage(Driver);
-        var insightsPage = new InsightsPage(Driver);
-        var articlePage = new ArticlePage(Driver);
+        RunWithLogging(() =>
+        {
+            var mainPage = new MainPage(Driver);
+            var insightsPage = new InsightsPage(Driver);
+            var articlePage = new ArticlePage(Driver);
 
-        mainPage.OpenHomePageWithConsentCookie();
-        mainPage.ClickInsights();
-        insightsPage.SwipeCarouselNext(swipeCount);
-        var carouselTitle = insightsPage.GetActiveCarouselArticleTitle();
-        insightsPage.ClickReadMoreButton();
-        var articleTitle = articlePage.GetArticleTitle();
+            mainPage.OpenHomePageWithConsentCookie();
+            mainPage.ClickInsights();
+            insightsPage.SwipeCarouselNext(swipeCount);
+            var carouselTitle = insightsPage.GetActiveCarouselArticleTitle();
+            insightsPage.ClickReadMoreButton();
+            var articleTitle = articlePage.GetArticleTitle();
 
-        Assert.Equal(carouselTitle, articleTitle, ignoreCase: true);
+            Assert.Equal(carouselTitle, articleTitle, ignoreCase: true);
+        }, nameof(CarouselArticleTitleMatchesDetailPageTest));
     }
 }

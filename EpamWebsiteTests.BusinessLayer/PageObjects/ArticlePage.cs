@@ -20,11 +20,11 @@ public class ArticlePage : BasePage
 
         var titleSelectors = new[]
         {
-        "main h1, article h1, h1",
-        ".single-section-full-width__content-container .scaling-of-text-wrapper",
-        ".single-section-full-width__content-container .text-ui-23 p",
-        ".single-section-full-width__content-container .font-size-80-33"
-    };
+            "main h1, article h1, h1",
+            ".single-section-full-width__content-container .scaling-of-text-wrapper",
+            ".single-section-full-width__content-container .text-ui-23 p",
+            ".single-section-full-width__content-container .font-size-80-33"
+        };
 
         var title = Wait.Until(d =>
         {
@@ -35,6 +35,7 @@ public class ArticlePage : BasePage
                 var element = d.FindElements(By.CssSelector(selector))
                     .FirstOrDefault(e => e.Displayed);
 
+                // just use element.Text;
                 if (element == null)
                 {
                     continue;
