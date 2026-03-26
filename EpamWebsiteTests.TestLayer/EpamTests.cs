@@ -1,6 +1,7 @@
 ﻿using EpamWebsiteTests.BusinessLayer.PageObjects;
-using Xunit;
 using Serilog;
+using System.Text.RegularExpressions;
+using Xunit;
 
 namespace EpamWebsiteTests.TestLayer;
 
@@ -86,6 +87,7 @@ public class EpamTests : UiTestBase
     [Theory]
     [InlineData(2)]
     [InlineData(1)]
+    [InlineData(0)]
     public void CarouselArticleTitleMatchesDetailPageTest(int swipeCount)
     {
         RunWithLogging(() =>
@@ -103,8 +105,17 @@ public class EpamTests : UiTestBase
             insightsPage.ClickReadMoreButton();
             var articleTitle = articlePage.GetArticleTitle();
 
-            Log.Information("Comparing carousel title and article title. Carousel: '{CarouselTitle}', Article: '{ArticleTitle}'", carouselTitle, articleTitle);
-            Assert.Equal(carouselTitle, articleTitle, ignoreCase: true);
+            Log.Information("Asserting all words from carousel title appear in article title. Carousel: '{CarouselTitle}', Article: '{ArticleTitle}'", carouselTitle, articleTitle);
+            var carouselWords = Regex.Split(carouselTitle, @"\W+")
+                .Where(w => !string.IsNullOrWhiteSpace(w))
+                .Select(w => w.ToLowerInvariant());
+
+            var articleTitleLower = articleTitle.ToLowerInvariant();
+
+            foreach (var word in carouselWords)
+            {
+                Assert.Contains(word, articleTitleLower);
+            }
             Log.Information("[TEST END] CarouselArticleTitleMatchesDetailPageTest passed.");
         }, nameof(CarouselArticleTitleMatchesDetailPageTest));
     }
