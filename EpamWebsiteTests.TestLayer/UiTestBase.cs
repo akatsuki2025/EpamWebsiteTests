@@ -50,11 +50,7 @@ public abstract class UiTestBase : IDisposable
 
         Directory.CreateDirectory(ScreenshotDirectory);
 
-        DownloadDirectory = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "EpamDownloads",
-            runTimestamp);
-
+        DownloadDirectory = TestDirectories.GetDownloadDirectory();
         Directory.CreateDirectory(DownloadDirectory);
 
         Session = WebDriverFactory.Create(
