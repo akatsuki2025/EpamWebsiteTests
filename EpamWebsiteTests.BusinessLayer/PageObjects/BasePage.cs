@@ -99,4 +99,13 @@ public abstract class BasePage
         Log.Debug("Normalized text: {Normalized}", normalized);
         return normalized;
     }
+
+    protected void WaitForPageLoadComplete()
+    {
+        Wait.Until(d =>
+        {
+            var readyState = ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState") as string;
+            return string.Equals(readyState, "complete", StringComparison.OrdinalIgnoreCase);
+        });
+    }
 }

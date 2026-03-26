@@ -108,14 +108,7 @@ public class JobsPage : BasePage
 
     private void WaitForResultsRefresh()
     {
-        Log.Debug("Waiting for results to refresh.");
-        var firstCard = Driver.FindElements(jobCards).FirstOrDefault();
-
-        if (firstCard != null)
-        {
-            Log.Debug("Waiting for staleness of first card.");
-            Wait.Until(ExpectedConditions.StalenessOf(firstCard));
-        }
+        WaitForPageLoadComplete();
 
         Wait.Until(driver =>
         {

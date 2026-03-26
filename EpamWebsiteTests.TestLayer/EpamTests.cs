@@ -88,6 +88,7 @@ public class EpamTests : UiTestBase
     [InlineData(2)]
     [InlineData(1)]
     [InlineData(0)]
+    [InlineData(3)]
     public void CarouselArticleTitleMatchesDetailPageTest(int swipeCount)
     {
         RunWithLogging(() =>
