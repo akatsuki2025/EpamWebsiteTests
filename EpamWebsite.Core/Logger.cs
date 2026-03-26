@@ -7,15 +7,10 @@ namespace EpamWebsite.Core
     {
         private static bool _initialized = false;
 
-        public static void InitLogger()
+        public static void InitLogger(IConfigurationRoot configuration)
         {
             if (_initialized)
                 return;
-
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .Build();
 
             var logFileName = $"Logs/log-{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}.txt";
 

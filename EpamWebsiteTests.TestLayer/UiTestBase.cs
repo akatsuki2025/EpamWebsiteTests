@@ -1,6 +1,7 @@
-﻿using EpamWebsite.Core.WebDriver;
+﻿using EpamWebsite.Core;
+using EpamWebsite.Core.WebDriver;
+using Microsoft.Extensions.Configuration;
 using OpenQA.Selenium;
-using EpamWebsite.Core;
 using Serilog;
 
 namespace EpamWebsiteTests.TestLayer;
@@ -14,6 +15,23 @@ public abstract class UiTestBase : IDisposable
     protected readonly string DownloadDirectory;
     protected readonly string ScreenshotDirectory;
 
+    private static readonly IConfigurationRoot _configurationRoot =
+        new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
+
+    private static readonly Configuration _configuration = LoadConfiguration();
+
+    private static Configuration LoadConfiguration()
+    {
+        var config = new Configuration();
+        _configurationRoot.Bind(config);
+        Logger.InitLogger(_configurationRoot);
+        var _ = typeof(LoggerShutdown);
+        return config;
+    }
+
     static class LoggerShutdown
     {
         static LoggerShutdown()
@@ -21,13 +39,6 @@ public abstract class UiTestBase : IDisposable
             AppDomain.CurrentDomain.ProcessExit += (s, e) => Logger.CloseAndFlush();
         }
     }
-
-    static UiTestBase()
-    {
-        Logger.InitLogger();
-        var _ = typeof(LoggerShutdown);
-    }
-
     protected UiTestBase()
     {
         var runTimestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fff");
@@ -46,7 +57,11 @@ public abstract class UiTestBase : IDisposable
 
         Directory.CreateDirectory(DownloadDirectory);
 
-        Session = WebDriverFactory.Create(BrowserType.Chrome, DownloadDirectory);
+        Session = WebDriverFactory.Create(
+            Enum.TryParse<BrowserType>(_configuration.WebDriver.Browser, true, out var browserType)
+            ? browserType
+            : throw new ArgumentException($"Invalid browser type: {_configuration.WebDriver.Browser}"),
+            DownloadDirectory);
         Session.StartBrowser();
         Driver = Session.Driver;
     }
