@@ -1,5 +1,4 @@
-﻿using EpamWebsite.BDDTests.Support;
-using EpamWebsiteTests.BusinessLayer.PageObjects;
+﻿using EpamWebsiteTests.BusinessLayer.PageObjects;
 using OpenQA.Selenium;
 
 namespace EpamWebsite.BDDTests.StepDefinitions;

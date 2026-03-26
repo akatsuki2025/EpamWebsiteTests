@@ -1,7 +1,5 @@
 using EpamWebsiteTests.BusinessLayer.PageObjects;
 using OpenQA.Selenium;
-using Reqnroll;
-using System;
 
 namespace EpamWebsite.BDDTests.StepDefinitions;
 

@@ -24,10 +24,4 @@
     <ProjectReference Include="..\EpamWebsiteTests.BusinessLayer\EpamWebsite.Business.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>
