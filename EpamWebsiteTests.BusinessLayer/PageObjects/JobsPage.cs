@@ -95,12 +95,7 @@ public class JobsPage : BasePage
 
     private void WaitForResultsRefresh()
     {
-        var firstCard = Driver.FindElements(jobCards).FirstOrDefault();
-
-        if (firstCard != null)
-        {
-            Wait.Until(ExpectedConditions.StalenessOf(firstCard));
-        }
+        WaitForPageLoadComplete();
 
         Wait.Until(driver =>
         {
@@ -159,7 +154,7 @@ public class JobsPage : BasePage
                 }
 
                 var raw = ((IJavaScriptExecutor)d).ExecuteScript("return arguments[0].textContent;", card) as string;
-                var normalized = NormalizeWhitespace(raw);
+                var normalized = Normalize(raw);
 
                 if (string.IsNullOrWhiteSpace(normalized))
                 {
@@ -194,16 +189,6 @@ public class JobsPage : BasePage
         }
 
         return result;
-    }
-
-    private static string NormalizeWhitespace(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        return string.Join(" ", value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     }
 
     private IWebElement? GetCardByIndex(ISearchContext context, int index)

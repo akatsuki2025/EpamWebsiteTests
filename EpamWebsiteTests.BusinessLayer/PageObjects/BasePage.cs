@@ -1,6 +1,7 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
+using System.Text.RegularExpressions;
 
 namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
@@ -68,5 +69,40 @@ public abstract class BasePage
 
         throw new TimeoutException(
             $"File like '{expectedFileName}' was not downloaded within {timeout}. Found: {existing}");
+    }
+
+    protected WebDriverWait CreateWait(int seconds, int pollingMs = 150, bool ignoreStale = true)
+    {
+        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(seconds))
+        {
+            PollingInterval = TimeSpan.FromMilliseconds(pollingMs)
+        };
+
+        if (ignoreStale)
+        {
+            wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
+        }
+
+        return wait;
+    }
+
+    protected static string Normalize(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        var normalized = Regex.Replace(text, "\\s+", " ").Trim();
+        return normalized;
+    }
+
+    protected void WaitForPageLoadComplete()
+    {
+        Wait.Until(d =>
+        {
+            var readyState = ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState") as string;
+            return string.Equals(readyState, "complete", StringComparison.OrdinalIgnoreCase);
+        });
     }
 }

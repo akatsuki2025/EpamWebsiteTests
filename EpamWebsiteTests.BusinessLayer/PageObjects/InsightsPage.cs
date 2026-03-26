@@ -7,16 +7,18 @@ namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
 public class InsightsPage : BasePage
 {
-    private static readonly Regex counterRegex = new(@"^\d{1,2}\s*/\s*\d{1,2}$",
-        RegexOptions.Compiled);
-    private static readonly Regex actionTextRegex = new(@"^(read(\s+the)?\s+(more|report)|learn\s+more|discover|explore|watch|view|see\s+more)$",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex counterRegex = new(@"^\d{1,2}\s*/\s*\d{1,2}$", RegexOptions.Compiled);
+
     private static readonly By nextArrowBy = By.CssSelector("button.slider__right-arrow.slider-navigation-arrow");
     private static readonly By ctaBy = By.CssSelector("a.slider-cta-link[href]");
-    private static readonly By counterElementXPath = By.XPath(".//*[contains(normalize-space(.),'/')]");
-    private static readonly By ancestorRootXPath = By.XPath(
+    private static readonly By counterElementBy = By.XPath(".//*[contains(normalize-space(.),'/')]");
+    private static readonly By ancestorRootBy = By.XPath(
         "./ancestor::*[.//a[contains(@class,'slider-cta-link')] and .//*[contains(@class,'slick-slide') or contains(@class,'single-slide')]][1]");
-
+    private static readonly By TitleCandidatesBy = By.XPath(".//h1 | .//h2 | .//h3 | .//*[contains(@class,'scaling-of-text-wrapper')]");
+    private static readonly By ancestorSlickClonedBy = By.XPath("./ancestor::*[contains(@class,'slick-cloned')]");
+    private static readonly By ancestorRichContainerBy = By.XPath(
+        "./ancestor::*[.//a[contains(@class,'slider-cta-link')] and (.//h2 or .//h3 or .//*[contains(@class,'scaling-of-text-wrapper')])][1]");
+    private static readonly By ancestorClickableBy = By.XPath("./ancestor::a|./ancestor::button");
     private IWebElement? cachedRoot;
 
     public InsightsPage(IWebDriver driver) : base(driver)
@@ -38,11 +40,7 @@ public class InsightsPage : BasePage
     public string GetActiveCarouselArticleTitle()
     {
         var cta = GetPreparedActiveCta();
-        var title = GetTitleForCta(cta);
-        if (string.IsNullOrWhiteSpace(title))
-        {
-            throw new NoSuchElementException("Could not resolve title from active carousel card.");
-        }
+        var title = GetAndValidateTitleForCta(cta);
 
         return title;
     }
@@ -66,7 +64,12 @@ public class InsightsPage : BasePage
     private void WaitForCounter(Func<(int Current, int Total), bool> condition, int timeoutSeconds = 10, int pollingMs = 150)
     {
         var wait = CreateWait(timeoutSeconds, pollingMs: pollingMs);
-        wait.Until(_ => condition(GetCarouselPosition()));
+        wait.Until(_ =>
+        {
+            var pos = GetCarouselPosition();
+            var result = condition(pos);
+            return result;
+        });
     }
 
     private void WaitForCounterValue(int expectedCurrent, int expectedTotal)
@@ -133,10 +136,10 @@ public class InsightsPage : BasePage
     private void EnsureInsightsLoaded()
     {
         Wait.Until(d => d.Url.Contains("/insights", StringComparison.OrdinalIgnoreCase));
-        _ = GetCarouselRoot();
+        _ = GetAndValidateCarouselRoot();
     }
 
-    private IWebElement GetCarouselRoot()
+    private IWebElement GetAndValidateCarouselRoot()
     {
         if (TryGetValidCachedRoot(out var cached))
         {
@@ -179,7 +182,7 @@ public class InsightsPage : BasePage
 
         foreach (var arrow in arrows)
         {
-            var root = arrow.FindElements(ancestorRootXPath).FirstOrDefault();
+            var root = arrow.FindElements(ancestorRootBy).FirstOrDefault();
 
             if (IsValidCarouselRoot(root))
             {
@@ -197,27 +200,32 @@ public class InsightsPage : BasePage
             return false;
         }
 
-        return root.FindElements(counterElementXPath)
+        var hasCounter = root.FindElements(counterElementBy)
             .Select(e => Normalize(e.Text))
             .Any(t => counterRegex.IsMatch(t));
+        return hasCounter;
     }
 
     private IWebElement GetClickableNextArrowButton()
     {
-        var root = GetCarouselRoot();
+        var root = GetAndValidateCarouselRoot();
 
-        return Wait.Until(_ =>
-            root.FindElements(nextArrowBy).FirstOrDefault(e => e.Displayed && e.Enabled))
-            ?? throw new NoSuchElementException("Carousel next arrow not found.");
+        var arrow = Wait.Until(_ => root.FindElements(nextArrowBy).FirstOrDefault(e => e.Displayed && e.Enabled));
+        if (arrow == null)
+        {
+            throw new NoSuchElementException("Carousel next arrow not found.");
+        }
+
+        return arrow;
     }
 
     private (int Current, int Total) GetCarouselPosition()
     {
-        var root = GetCarouselRoot();
+        var root = GetAndValidateCarouselRoot();
 
         var counterText = Wait.Until(_ =>
         {
-            var candidate = root.FindElements(counterElementXPath)
+            var candidate = root.FindElements(counterElementBy)
                 .Select(e => Normalize(e.Text))
                 .FirstOrDefault(t => counterRegex.IsMatch(t));
 
@@ -242,13 +250,15 @@ public class InsightsPage : BasePage
 
     private IWebElement GetActiveCtaElement()
     {
-        var root = GetCarouselRoot();
+        var root = GetAndValidateCarouselRoot();
 
-        return Wait.Until(_ =>
+        var cta = root.FindElements(ctaBy).FirstOrDefault(IsUsableCta);
+        if (cta == null)
         {
-            var usable = root.FindElements(ctaBy).Where(IsUsableCta).ToList();
-            return usable.FirstOrDefault(IsInsideActiveSlide) ?? usable.FirstOrDefault();
-        }) ?? throw new NoSuchElementException("No usable Read More link found in carousel.");
+            throw new NoSuchElementException("No usable Read More link found in carousel.");
+        }
+
+        return cta;
     }
 
     private static bool IsUsableCta(IWebElement element)
@@ -263,72 +273,49 @@ public class InsightsPage : BasePage
             return false;
         }
 
-        var insideCloned = element.FindElements(By.XPath("./ancestor::*[contains(@class,'slick-cloned')]")).Count > 0;
+        var insideCloned = element.FindElements(ancestorSlickClonedBy).Count > 0;
         return !insideCloned;
     }
 
-    private static bool IsInsideActiveSlide(IWebElement cta)
+    private string GetAndValidateTitleForCta(IWebElement cta)
     {
-        return cta.FindElements(By.XPath(
-            "./ancestor::*[(contains(@class,'slick-active') or @aria-hidden='false') and not(contains(@class,'slick-cloned'))]"))
-            .Count > 0;
-    }
+        var scope = GetAndValidateCardContainerForCta(cta);
 
-    private string GetTitleForCta(IWebElement cta)
-    {
-        var scope = GetCardContainerForCta(cta);
-        var wait = CreateWait(6);
-
-        var title = wait.Until(_ =>
+        var title = Wait.Until(_ =>
         {
-            var candidates = GetTitleCandidates(scope);
-
-            return TryGetClassBasedTitle(candidates)
-                ?? TryGetLongestTitle(candidates);
+            var candidate = GetTitleCandidates(scope).FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(candidate.Text))
+            {
+                return candidate.Text;
+            }
+            return null;
         });
 
-        if (!string.IsNullOrWhiteSpace(title))
+        if (string.IsNullOrWhiteSpace(title))
         {
-            return title;
+            throw new NoSuchElementException("Title element not found for CTA card.");
         }
 
-        throw new NoSuchElementException("Title element not found for CTA card.");
+        return title;
     }
 
     private static List<(IWebElement Element, string Text)> GetTitleCandidates(IWebElement scope)
     {
         return scope
-            .FindElements(By.XPath(
-                ".//*[self::h1 or self::h2 or self::h3 or self::p or self::div or self::span or contains(@class,'scaling-of-text-wrapper') or contains(@class,'font-size-')]"))
-            .Where(e => e.Displayed && e.FindElements(By.XPath("./ancestor::a|./ancestor::button")).Count == 0)
+            .FindElements(TitleCandidatesBy)
+            .Where(e => e.Displayed && IsNotInsideClickableElement(e))
             .Select(e => (Element: e, Text: Normalize(e.Text)))
-            .Where(x => IsLikelyTitleText(x.Text))
             .ToList();
     }
 
-    private static string? TryGetClassBasedTitle(IEnumerable<(IWebElement Element, string Text)> candidates)
+    private static bool IsNotInsideClickableElement(IWebElement element)
     {
-        return candidates
-            .FirstOrDefault(x =>
-            {
-                var cls = (x.Element.GetAttribute("class") ?? string.Empty).ToLowerInvariant();
-                return cls.Contains("scaling-of-text-wrapper") || cls.Contains("font-size-");
-            })
-            .Text;
+        return element.FindElements(ancestorClickableBy).Count == 0;
     }
 
-    private static string? TryGetLongestTitle(IEnumerable<(IWebElement Element, string Text)> candidates)
+    private static IWebElement GetAndValidateCardContainerForCta(IWebElement cta)
     {
-        return candidates
-            .OrderByDescending(x => x.Text.Length)
-            .FirstOrDefault()
-            .Text;
-    }
-
-    private IWebElement GetCardContainerForCta(IWebElement cta)
-    {
-        var richContainer = cta.FindElements(By.XPath(
-            "./ancestor::*[.//a[contains(@class,'slider-cta-link')] and (.//h1 or .//h2 or .//h3 or .//*[contains(@class,'scaling-of-text-wrapper')] or .//*[contains(@class,'font-size-')])][1]"))
+        var richContainer = cta.FindElements(ancestorRichContainerBy)
             .FirstOrDefault();
 
         if (richContainer != null)
@@ -336,56 +323,6 @@ public class InsightsPage : BasePage
             return richContainer;
         }
 
-        var slide = cta.FindElements(By.XPath(
-            "./ancestor::*[contains(@class,'slick-slide') or contains(@class,'single-slide')][1]"))
-            .FirstOrDefault();
-
-        if (slide != null)
-        {
-            return slide;
-        }
-
-        var root = GetCarouselRoot();
-        return root;
-    }
-
-    private static bool IsLikelyTitleText(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return false;
-        if (text.Length < 12) return false;
-        if (counterRegex.IsMatch(text)) return false;
-        if (actionTextRegex.IsMatch(text)) return false;
-        if (text.StartsWith("Read ", StringComparison.OrdinalIgnoreCase)) return false;
-        if (text.StartsWith("Learn ", StringComparison.OrdinalIgnoreCase)) return false;
-        if (string.Equals(text, "undefined", StringComparison.OrdinalIgnoreCase)) return false;
-        if (Uri.IsWellFormedUriString(text, UriKind.Absolute)) return false;
-
-        return true;
-    }
-
-    private static string Normalize(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return string.Empty;
-        }
-
-        text = text.Replace('\u00A0', ' ');
-        return Regex.Replace(text, "\\s+", " ").Trim();
-    }
-
-    private WebDriverWait CreateWait(int seconds, int pollingMs = 150, bool ignoreStale = true)
-    {
-        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(seconds))
-        {
-            PollingInterval = TimeSpan.FromMilliseconds(pollingMs)
-        };
-
-        if (ignoreStale)
-        {
-            wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
-        }
-
-        return wait;
+        throw new NoSuchElementException("Rich container not found for CTA.");
     }
 }

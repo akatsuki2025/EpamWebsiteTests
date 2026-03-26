@@ -12,7 +12,6 @@ public class CareersPage : BasePage
 
     public void ClickStartJobSearch()
     {
-        var searchButton = WaitUntilClickable(startJobSearchButton);
-        searchButton.Click();
+        WaitUntilClickable(startJobSearchButton).Click();
     }
 }

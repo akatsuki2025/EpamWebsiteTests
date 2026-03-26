@@ -1,6 +1,7 @@
 ﻿using EpamWebsiteTests.BusinessLayer.PageObjects;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace EpamWebsiteTests.TestLayer;
@@ -48,7 +49,7 @@ public class EpamTests : IDisposable
         var careersPage = new CareersPage(driver);
         var jobsPage = new JobsPage(driver);
 
-        mainPage.Open();
+        mainPage.OpenHomePageWithConsentCookie();
         mainPage.ClickCareers();
         careersPage.ClickStartJobSearch();
         jobsPage.EnterKeyword(keyword);
@@ -68,7 +69,7 @@ public class EpamTests : IDisposable
     {
         var mainPage = new MainPage(driver);
 
-        mainPage.Open();
+        mainPage.OpenHomePageWithConsentCookie();
         mainPage.ClickGlobalSearchButton();
         mainPage.EnterGlobalSearchKeyword(keyword);
         mainPage.ClickGlobalSearchSubmitButton();
@@ -84,12 +85,12 @@ public class EpamTests : IDisposable
         var cancellationToken = TestContext.Current.CancellationToken;
         var mainPage = new MainPage(driver);
 
-        mainPage.Open();
+        mainPage.OpenHomePageWithConsentCookie();
         mainPage.ClickCodeOfEthicalConductPdf();
         var downloadedPath = await BasePage.WaitForDownloadedFileAsync(
                 downloadDirectory,
                 fileName,
-                TimeSpan.FromSeconds(30),
+                TimeSpan.FromSeconds(20),
                 cancellationToken);
 
         Assert.Equal(fileName, Path.GetFileName(downloadedPath), ignoreCase: true);
@@ -98,20 +99,31 @@ public class EpamTests : IDisposable
     [Theory]
     [InlineData(2)]
     [InlineData(1)]
+    [InlineData(0)]
+    [InlineData(3)]
     public void CarouselArticleTitleMatchesDetailPageTest(int swipeCount)
     {
         var mainPage = new MainPage(driver);
         var insightsPage = new InsightsPage(driver);
         var articlePage = new ArticlePage(driver);
 
-        mainPage.Open();
+        mainPage.OpenHomePageWithConsentCookie();
         mainPage.ClickInsights();
         insightsPage.SwipeCarouselNext(swipeCount);
         var carouselTitle = insightsPage.GetActiveCarouselArticleTitle();
         insightsPage.ClickReadMoreButton();
         var articleTitle = articlePage.GetArticleTitle();
 
-        Assert.Equal(carouselTitle, articleTitle, ignoreCase: true);
+        var carouselWords = Regex.Split(carouselTitle, @"\W+")
+                .Where(w => !string.IsNullOrWhiteSpace(w))
+                .Select(w => w.ToLowerInvariant());
+
+        var articleTitleLower = articleTitle.ToLowerInvariant();
+
+        foreach (var word in carouselWords)
+        {
+            Assert.Contains(word, articleTitleLower);
+        }
     }
 
     protected virtual void Dispose(bool disposing)

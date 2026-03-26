@@ -12,19 +12,17 @@ public class MainPage : BasePage
     private readonly By globalSearchInput = By.Name("q");
     private readonly By globalSearchSubmitButton = By.XPath("//button[contains(@class,'custom-search-button') and .//span[contains(text(),'Find')]]");
     private readonly By globalSearchResultLinks = By.CssSelector(".search-results__item a");
-    private readonly By footer = By.TagName("footer");
     private readonly By codeOfEthicalConductPdfLink = By.CssSelector("footer a[href*='Code-Of-Conduct'][href$='.pdf']");
 
     public MainPage(IWebDriver driver) : base(driver)
     {
     }
 
-    public void Open()
+    public void OpenHomePageWithConsentCookie()
     {
         Driver.Navigate().GoToUrl(MainUrl);
 
-        Wait.Until(d =>
-            ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState")?.ToString() == "complete");
+        WaitForPageLoadComplete();
 
         Driver.Manage().Cookies.AddCookie(new Cookie(
             "OptanonAlertBoxClosed",
@@ -35,8 +33,7 @@ public class MainPage : BasePage
 
         Driver.Navigate().Refresh();
 
-        Wait.Until(d =>
-            ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState")?.ToString() == "complete");
+        WaitForPageLoadComplete();
     }
 
     public void ClickCareers()
@@ -79,38 +76,25 @@ public class MainPage : BasePage
         });
     }
 
-    public void ScrollToFooter()
+    public void ScrollToElement(IWebElement element)
     {
-        var footerElement = WaitUntilVisible(footer);
-
         ((IJavaScriptExecutor)Driver).ExecuteScript(
-            "arguments[0].scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });",
-            footerElement);
+            "arguments[0].scrollIntoView({ block: 'center', inline: 'nearest' });",
+            element);
     }
 
     public void ClickCodeOfEthicalConductPdf()
     {
-        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(20));
-
-        var link = wait.Until(d =>
+        var link = Wait.Until(d =>
         {
             var element = d.FindElements(codeOfEthicalConductPdfLink)
                 .FirstOrDefault(e => e.Displayed && e.Enabled);
             return element;
-        }) ?? throw new NoSuchElementException("Visible Code Of Conduct PDF link was not found.");
+        });
 
-        ((IJavaScriptExecutor)Driver).ExecuteScript(
-            "arguments[0].scrollIntoView({ block: 'center', inline: 'nearest' });",
-            link);
+        ScrollToElement(link);
 
-        try
-        {
-            wait.Until(_ => link.Displayed && link.Enabled);
-            link.Click();
-        }
-        catch (WebDriverException)
-        {
-            ((IJavaScriptExecutor)Driver).ExecuteScript("arguments[0].click();", link);
-        }
+        Wait.Until(_ => link.Displayed && link.Enabled);
+        link.Click();
     }
 }

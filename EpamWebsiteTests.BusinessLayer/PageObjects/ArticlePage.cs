@@ -5,26 +5,19 @@ namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
 public class ArticlePage : BasePage
 {
-    public ArticlePage(IWebDriver driver) : base(driver) { }
-
-    private static string Normalize(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
-        return Regex.Replace(text, "\\s+", " ").Trim();
+    public ArticlePage(IWebDriver driver) : base(driver) 
+    { 
     }
 
     public string GetArticleTitle()
     {
-        Wait.Until(d =>
-            ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState")?.ToString() == "complete");
+        WaitForPageLoadComplete();
 
         var titleSelectors = new[]
         {
-        "main h1, article h1, h1",
-        ".single-section-full-width__content-container .scaling-of-text-wrapper",
-        ".single-section-full-width__content-container .text-ui-23 p",
-        ".single-section-full-width__content-container .font-size-80-33"
-    };
+            "main h1, article h1, h1",
+            ".single-section-full-width__content-container .scaling-of-text-wrapper"
+        };
 
         var title = Wait.Until(d =>
         {
