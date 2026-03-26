@@ -87,7 +87,7 @@ public abstract class BasePage
         return wait;
     }
 
-    protected static string Normalize(string text)
+    protected static string Normalize(string? text)
     {
         Log.Debug("Normalize called for text: {Text}", text);
         if (string.IsNullOrWhiteSpace(text))

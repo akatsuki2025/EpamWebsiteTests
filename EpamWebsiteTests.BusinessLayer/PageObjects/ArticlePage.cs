@@ -1,5 +1,4 @@
 ﻿using OpenQA.Selenium;
-using System.Text.RegularExpressions;
 using Serilog;
 
 namespace EpamWebsiteTests.BusinessLayer.PageObjects;
@@ -12,8 +11,7 @@ public class ArticlePage : BasePage
     {
         Log.Information("Attempting to get article title from the page.");
 
-        Wait.Until(d =>
-            ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState")?.ToString() == "complete");
+        WaitForPageLoadComplete();
 
         var titleSelectors = new[]
         {

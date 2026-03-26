@@ -1,5 +1,4 @@
 ﻿using OpenQA.Selenium;
-using OpenQA.Selenium.Support.UI;
 using Serilog;
 
 namespace EpamWebsiteTests.BusinessLayer.PageObjects;
@@ -24,8 +23,7 @@ public class MainPage : BasePage
         Log.Information("Navigating to main page: {MainUrl}", MainUrl);
         Driver.Navigate().GoToUrl(MainUrl);
 
-        Wait.Until(d =>
-            ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState")?.ToString() == "complete");
+        WaitForPageLoadComplete();
 
         Log.Information("Adding consent cookie.");
         Driver.Manage().Cookies.AddCookie(new Cookie(
@@ -36,9 +34,7 @@ public class MainPage : BasePage
             DateTime.UtcNow.AddYears(1)));
 
         Driver.Navigate().Refresh();
-
-        Wait.Until(d =>
-            ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState")?.ToString() == "complete");
+        WaitForPageLoadComplete();
     }
 
     public void ClickCareers()
