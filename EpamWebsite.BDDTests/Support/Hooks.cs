@@ -22,7 +22,7 @@ public class Hooks
     {
         var config = Configuration.Load(AppContext.BaseDirectory);
         var browserType = Enum.Parse<BrowserType>(config.WebDriver.Browser, true);
-        _downloadDirectory = TestDirectories.GetDownloadDirectory();
+        _downloadDirectory = TestDirectoriesHelper.GetDownloadDirectory();
 
         Directory.CreateDirectory(_downloadDirectory);
 
@@ -40,10 +40,10 @@ public class Hooks
     {
         _session?.CloseBrowser();
         _session?.Dispose();
-
-        if (Directory.Exists(_downloadDirectory))
+        
+        if (_scenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.OK)
         {
-            Directory.Delete(_downloadDirectory, recursive: true);
+            TestDirectoriesHelper.DeleteDirectoryIfExists(_downloadDirectory);
         }
     }
 }

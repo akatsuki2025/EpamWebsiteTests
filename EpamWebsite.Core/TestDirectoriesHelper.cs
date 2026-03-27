@@ -1,6 +1,6 @@
 ﻿namespace EpamWebsite.Core;
 
-public static class TestDirectories
+public static class TestDirectoriesHelper
 {
     public static string GetDownloadDirectory()
     {
@@ -9,5 +9,13 @@ public static class TestDirectories
             Directory.GetCurrentDirectory(),
             "EpamDownloads",
             runTimestamp);
+    }
+
+    public static void DeleteDirectoryIfExists(string directory)
+    {
+        if (Directory.Exists(directory))
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 }

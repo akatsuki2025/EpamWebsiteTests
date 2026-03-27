@@ -1,4 +1,5 @@
-﻿using EpamWebsiteTests.BusinessLayer.PageObjects;
+﻿using EpamWebsite.Core;
+using EpamWebsiteTests.BusinessLayer.PageObjects;
 using Serilog;
 using System.Text.RegularExpressions;
 using Xunit;
@@ -107,10 +108,7 @@ public class EpamTests : UiTestBase
             var articleTitle = articlePage.GetArticleTitle();
 
             Log.Information("Asserting all words from carousel title appear in article title. Carousel: '{CarouselTitle}', Article: '{ArticleTitle}'", carouselTitle, articleTitle);
-            var carouselWords = Regex.Split(carouselTitle, @"\W+")
-                .Where(w => !string.IsNullOrWhiteSpace(w))
-                .Select(w => w.ToLowerInvariant());
-
+            var carouselWords = TextProcessingHelper.ExtractNormalizedWords(carouselTitle);
             var articleTitleLower = articleTitle.ToLowerInvariant();
 
             foreach (var word in carouselWords)

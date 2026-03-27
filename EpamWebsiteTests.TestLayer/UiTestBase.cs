@@ -50,7 +50,7 @@ public abstract class UiTestBase : IDisposable
 
         Directory.CreateDirectory(ScreenshotDirectory);
 
-        DownloadDirectory = TestDirectories.GetDownloadDirectory();
+        DownloadDirectory = TestDirectoriesHelper.GetDownloadDirectory();
         Directory.CreateDirectory(DownloadDirectory);
 
         Session = WebDriverFactory.Create(
@@ -107,10 +107,7 @@ public abstract class UiTestBase : IDisposable
         {
             Session.Dispose();
 
-            if (Directory.Exists(DownloadDirectory))
-            {
-                Directory.Delete(DownloadDirectory, recursive: true);
-            }
+            TestDirectoriesHelper.DeleteDirectoryIfExists(DownloadDirectory);
 
             if (Directory.Exists(ScreenshotDirectory) && !Directory.EnumerateFileSystemEntries(ScreenshotDirectory).Any())
             {
