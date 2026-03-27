@@ -24,15 +24,13 @@ public class DownloadFileStepDefinitions
     }
 
     [Then("the file {string} should be downloaded")]
-    public async Task ThenTheFileShouldBeDownloaded(string fileName)
+    public void ThenTheFileShouldBeDownloaded(string fileName)
     {
         var downloadDirectory = (string)_scenarioContext["DownloadDirectory"]; 
-        var cancellationToken = default(CancellationToken);
-        var downloadedPath = await BasePage.WaitForDownloadedFileAsync(
+        var downloadedPath = BasePage.WaitForDownloadedFile(
             downloadDirectory,
             fileName,
-            TimeSpan.FromSeconds(20),
-            cancellationToken);
+            TimeSpan.FromSeconds(20));
 
         Assert.Equal(fileName, Path.GetFileName(downloadedPath), ignoreCase: true);
     }

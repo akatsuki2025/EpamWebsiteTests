@@ -61,22 +61,21 @@ public class EpamTests : UiTestBase
 
     [Theory]
     [InlineData("Code-Of-Conduct_01_26.pdf")]
-    public async Task DownloadFileTest(string fileName)
+    public void DownloadFileTest(string fileName)
     {
-        await RunWithLoggingAsync(async () =>
+        RunWithLogging(() =>
         {
             Log.Information($"[TEST START] DownloadFileTest with fileName='{fileName}'");
 
-            var cancellationToken = TestContext.Current.CancellationToken;
             var mainPage = new MainPage(Driver);
 
             mainPage.OpenHomePageWithConsentCookie();
             mainPage.ClickCodeOfEthicalConductPdf();
-            var downloadedPath = await BasePage.WaitForDownloadedFileAsync(
-                    DownloadDirectory,
-                    fileName,
-                    TimeSpan.FromSeconds(20),
-                    cancellationToken);
+
+            var downloadedPath = BasePage.WaitForDownloadedFile(
+                DownloadDirectory,
+                fileName,
+                TimeSpan.FromSeconds(20));
 
             Log.Information($"Downloaded file path: {downloadedPath}");
             Log.Information("Asserting downloaded file name matches expected.");

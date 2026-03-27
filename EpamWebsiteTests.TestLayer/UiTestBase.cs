@@ -15,21 +15,15 @@ public abstract class UiTestBase : IDisposable
     protected readonly string DownloadDirectory;
     protected readonly string ScreenshotDirectory;
 
-    private static readonly IConfigurationRoot _configurationRoot =
-        new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .Build();
+    private static readonly IConfigurationRoot _configurationRoot = Configuration.BuildConfiguration(AppContext.BaseDirectory);
 
-    private static readonly Configuration _configuration = LoadConfiguration();
+    private static readonly Configuration _configuration =
+        Configuration.FromRoot(_configurationRoot);
 
-    private static Configuration LoadConfiguration()
+    static UiTestBase()
     {
-        var config = new Configuration();
-        _configurationRoot.Bind(config);
         Logger.InitLogger(_configurationRoot);
         var _ = typeof(LoggerShutdown);
-        return config;
     }
 
     static class LoggerShutdown
@@ -41,23 +35,14 @@ public abstract class UiTestBase : IDisposable
     }
     protected UiTestBase()
     {
-        var runTimestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fff");
-
-        ScreenshotDirectory = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "Screenshots",
-            runTimestamp);
-
+        ScreenshotDirectory = TestDirectoriesHelper.GetScreenshotDirectory();
         Directory.CreateDirectory(ScreenshotDirectory);
 
         DownloadDirectory = TestDirectoriesHelper.GetDownloadDirectory();
         Directory.CreateDirectory(DownloadDirectory);
 
-        Session = WebDriverFactory.Create(
-            Enum.TryParse<BrowserType>(_configuration.WebDriver.Browser, true, out var browserType)
-            ? browserType
-            : throw new ArgumentException($"Invalid browser type: {_configuration.WebDriver.Browser}"),
-            DownloadDirectory);
+        var browserType = Enum.Parse<BrowserType>(_configuration.WebDriver.Browser, true);
+        Session = WebDriverFactory.Create(browserType, DownloadDirectory);
         Session.StartBrowser();
         Driver = Session.Driver;
     }
@@ -67,20 +52,6 @@ public abstract class UiTestBase : IDisposable
         try
         {
             testAction();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Test failed: {TestName}", testName);
-            ScreenshotHelper.TakeScreenshot(Driver, DownloadDirectory, testName);
-            throw;
-        }
-    }
-
-    protected async Task RunWithLoggingAsync(Func<Task> testAction, string testName)
-    {
-        try
-        {
-            await testAction();
         }
         catch (Exception ex)
         {

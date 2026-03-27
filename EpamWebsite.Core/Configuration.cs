@@ -7,13 +7,16 @@ public class Configuration
     public SerilogConfig Serilog { get; set; } = new();
     public WebDriverConfig WebDriver { get; set; } = new();
 
-    public static Configuration Load(string basePath)
+    public static IConfigurationRoot BuildConfiguration(string basePath)
     {
-        var builder = new ConfigurationBuilder()
-            .SetBasePath(basePath ?? Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+        return new ConfigurationBuilder()
+            .SetBasePath(basePath ?? AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
+    }
 
-        var configRoot = builder.Build();
+    public static Configuration FromRoot(IConfigurationRoot configRoot)
+    {
         var config = new Configuration();
         configRoot.Bind(config);
         return config;

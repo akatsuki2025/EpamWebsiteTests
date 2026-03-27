@@ -28,11 +28,10 @@ public abstract class BasePage
         return Wait.Until(ExpectedConditions.ElementIsVisible(locator));
     }
 
-    public static async Task<string> WaitForDownloadedFileAsync(
-         string downloadDirectory,
-         string expectedFileName,
-         TimeSpan timeout,
-         CancellationToken cancellationToken = default)
+    public static string WaitForDownloadedFile(
+        string downloadDirectory,
+        string expectedFileName,
+        TimeSpan timeout)
     {
         var expectedBase = Path.GetFileNameWithoutExtension(expectedFileName);
 
@@ -46,8 +45,6 @@ public abstract class BasePage
 
         while (DateTime.UtcNow - started < timeout)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             var files = Directory.EnumerateFiles(downloadDirectory).ToList();
 
             var completedMatch = files.FirstOrDefault(path =>
@@ -61,7 +58,7 @@ public abstract class BasePage
                 return completedMatch;
             }
 
-            await Task.Delay(250, cancellationToken);
+            Thread.Sleep(250);
         }
 
         var existing = Directory.Exists(downloadDirectory)
