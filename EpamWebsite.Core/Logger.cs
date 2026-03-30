@@ -24,14 +24,12 @@ namespace EpamWebsite.Core
                 var logFileName = $"Logs/log-{DateTime.Now:yyyyMMdd_HHmmss_fff}.txt";
                 var minLevel = configuration.GetSection("Serilog:MinimumLevel:Default").Value ?? "Information";
                 var parsedLevel = (Serilog.Events.LogEventLevel)Enum.Parse(typeof(Serilog.Events.LogEventLevel), minLevel, true);
-                var outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+                var outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{Scenario}] {Message:lj}{NewLine}{Exception}";
 
                 var loggerConfig = new LoggerConfiguration()
                     .ReadFrom.Configuration(configuration)
+                    .Enrich.FromLogContext()
                     .WriteTo.Console(
-                        outputTemplate: outputTemplate,
-                        restrictedToMinimumLevel: parsedLevel)
-                    .WriteTo.Debug(
                         outputTemplate: outputTemplate,
                         restrictedToMinimumLevel: parsedLevel)
                     .WriteTo.File(

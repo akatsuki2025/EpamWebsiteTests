@@ -7,6 +7,7 @@
   Background:
     Given I am on the EPAM main page
 
+@downloadFile
   Scenario Outline: Downloading the Code of Ethical Conduct PDF
     When I click the Code of Ethical Conduct PDF link in the footer
     Then the file "<fileName>" should be downloaded

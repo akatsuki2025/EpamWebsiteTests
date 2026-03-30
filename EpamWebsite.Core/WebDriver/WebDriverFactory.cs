@@ -10,7 +10,7 @@ public static class WebDriverFactory
         { BrowserType.Edge, new EdgeDriverFactory() }
     };
 
-    public static WebDriverSession Create(BrowserType browserType, string downloadDirectory)
+    public static WebDriverSession Create(BrowserType browserType, string? downloadDirectory)
     {
         if (!Factories.TryGetValue(browserType, out var factory))
         {

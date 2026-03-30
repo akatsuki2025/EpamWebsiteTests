@@ -4,7 +4,7 @@ namespace EpamWebsite.Core.WebDriver.Factories;
 
 public class ChromeDriverFactory : IBrowserFactory
 {
-    public WebDriverSession Create(string downloadDirectory)
+    public WebDriverSession Create(string? downloadDirectory)
     {
         var options = BuildOptions(downloadDirectory);
         var driver = new ChromeDriver(options);
@@ -14,27 +14,33 @@ public class ChromeDriverFactory : IBrowserFactory
         return new WebDriverSession(driver);
     }
 
-    private static ChromeOptions BuildOptions(string downloadDirectory)
+    private static ChromeOptions BuildOptions(string? downloadDirectory)
     {
         var options = new ChromeOptions();
 
-        options.AddUserProfilePreference("download.default_directory", downloadDirectory);
-        options.AddUserProfilePreference("download.prompt_for_download", false);
-        options.AddUserProfilePreference("download.directory_upgrade", true);
-        options.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
-        options.AddUserProfilePreference("safebrowsing.enabled", true);
+        if (!string.IsNullOrEmpty(downloadDirectory))
+        {
+            options.AddUserProfilePreference("download.default_directory", downloadDirectory);
+            options.AddUserProfilePreference("download.prompt_for_download", false);
+            options.AddUserProfilePreference("download.directory_upgrade", true);
+            options.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
+            options.AddUserProfilePreference("safebrowsing.enabled", true);
+        }
 
         return options;
     }
 
-    private static void ConfigureDownloads(ChromeDriver driver, string downloadDirectory)
+    private static void ConfigureDownloads(ChromeDriver driver, string? downloadDirectory)
     {
-        driver.ExecuteCdpCommand(
-            "Page.setDownloadBehavior",
-            new Dictionary<string, object?>
-            {
-                ["behavior"] = "allow",
-                ["downloadPath"] = downloadDirectory
-            });
+        if (!string.IsNullOrEmpty(downloadDirectory))
+        {
+            driver.ExecuteCdpCommand(
+                "Page.setDownloadBehavior",
+                new Dictionary<string, object?>
+                {
+                    ["behavior"] = "allow",
+                    ["downloadPath"] = downloadDirectory
+                });
+        }
     }
 }

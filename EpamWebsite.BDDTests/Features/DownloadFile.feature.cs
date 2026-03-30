@@ -105,14 +105,21 @@ namespace EpamWebsite.BDDTests.Features
         [Xunit.SkippableTheoryAttribute(DisplayName="Downloading the Code of Ethical Conduct PDF")]
         [Xunit.TraitAttribute("FeatureTitle", "Download Code of Ethical Conduct PDF")]
         [Xunit.TraitAttribute("Description", "Downloading the Code of Ethical Conduct PDF")]
+        [Xunit.TraitAttribute("Category", "downloadFile")]
         [Xunit.InlineDataAttribute("Code-Of-Conduct_01_26.pdf", new string[0])]
         public async System.Threading.Tasks.Task DownloadingTheCodeOfEthicalConductPDF(string fileName, string[] exampleTags)
         {
-            string[] tagsOfScenario = exampleTags;
+            string[] @__tags = new string[] {
+                    "downloadFile"};
+            if ((exampleTags != null))
+            {
+                @__tags = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Concat(@__tags, exampleTags));
+            }
+            string[] tagsOfScenario = @__tags;
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             argumentsOfScenario.Add("fileName", fileName);
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Downloading the Code of Ethical Conduct PDF", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 10
+#line 11
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -125,10 +132,10 @@ namespace EpamWebsite.BDDTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 11
+#line 12
     await testRunner.WhenAsync("I click the Code of Ethical Conduct PDF link in the footer", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 12
+#line 13
     await testRunner.ThenAsync(string.Format("the file \"{0}\" should be downloaded", fileName), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

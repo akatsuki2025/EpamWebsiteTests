@@ -5,10 +5,11 @@ public static class TestDirectoriesHelper
     public static string GetDownloadDirectory()
     {
         var runTimestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
+        var uniqueId = Guid.NewGuid().ToString("N");
         return Path.Combine(
             Directory.GetCurrentDirectory(),
             "EpamDownloads",
-            runTimestamp);
+            $"{runTimestamp}_{uniqueId}");
     }
 
     public static string GetScreenshotDirectory()

@@ -1,8 +1,8 @@
 ﻿using EpamWebsite.Core;
 using EpamWebsite.Core.WebDriver;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using OpenQA.Selenium;
 using Serilog;
+using Serilog.Context;
 
 namespace EpamWebsite.BDDTests.Support;
 
@@ -12,35 +12,47 @@ public class Hooks
     private readonly ScenarioContext _scenarioContext;
     private WebDriverSession _session;
     private IWebDriver _driver;
-    private string _downloadDirectory;
     private string _screenshotDirectory;
+    private IDisposable? _scenarioLogContext;
 
     public Hooks(ScenarioContext scenarioContext)
     {
         _scenarioContext = scenarioContext;
     }
 
+    [BeforeTestRun]
+    public static void BeforeTestRun()
+    {
+        var configurationRoot = Configuration.BuildConfiguration(AppContext.BaseDirectory);
+        Logger.InitLogger(configurationRoot);
+    }
+
     [BeforeScenario]
     public void BeforeScenario()
     {
-        var configurationRoot = Configuration.BuildConfiguration(AppContext.BaseDirectory);
-        var configuration = Configuration.FromRoot(configurationRoot);
-        Logger.InitLogger(configurationRoot);
-        
-        _downloadDirectory = TestDirectoriesHelper.GetDownloadDirectory();
-        Directory.CreateDirectory(_downloadDirectory);
+        _scenarioLogContext = LogContext.PushProperty("Scenario", _scenarioContext.ScenarioInfo.Title);
+
+        if (_scenarioContext.ScenarioInfo.Tags.Contains("downloadFile"))
+        {
+            var downloadDirectory = TestDirectoriesHelper.GetDownloadDirectory();
+            Directory.CreateDirectory(downloadDirectory);
+            _scenarioContext["DownloadDirectory"] = downloadDirectory;
+        }
 
         _screenshotDirectory = TestDirectoriesHelper.GetScreenshotDirectory();
         Directory.CreateDirectory(_screenshotDirectory);
 
+        var configurationRoot = Configuration.BuildConfiguration(AppContext.BaseDirectory);
+        var configuration = Configuration.FromRoot(configurationRoot);
+
         var browserType = Enum.Parse<BrowserType>(configuration.WebDriver.Browser, true);
-        _session = WebDriverFactory.Create(browserType, _downloadDirectory);
+        var downloadDir = _scenarioContext.TryGetValue("DownloadDirectory", out var dir) ? dir as string : null;
+        _session = WebDriverFactory.Create(browserType, downloadDir);
         _session.StartBrowser();
         _driver = _session.Driver;
 
         _scenarioContext["WebDriver"] = _driver;
         _scenarioContext["WebDriverSession"] = _session;
-        _scenarioContext["DownloadDirectory"] = _downloadDirectory;
     }
 
     [AfterStep]
@@ -61,11 +73,15 @@ public class Hooks
     {
         _session?.CloseBrowser();
         _session?.Dispose();
-        
-        if (_scenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.OK)
+
+        if (_scenarioContext.ContainsKey("DownloadDirectory") &&
+            _scenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.OK)
         {
-            TestDirectoriesHelper.DeleteDirectoryIfExists(_downloadDirectory);
+            var downloadDirectory = (string)_scenarioContext["DownloadDirectory"];
+            TestDirectoriesHelper.DeleteDirectoryIfExists(downloadDirectory);
         }
+
+        _scenarioLogContext?.Dispose();
     }
 
     [AfterTestRun]

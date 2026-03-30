@@ -3,12 +3,14 @@ using EpamWebsite.Core.WebDriver;
 using Microsoft.Extensions.Configuration;
 using OpenQA.Selenium;
 using Serilog;
+using Serilog.Context;
 
 namespace EpamWebsiteTests.TestLayer;
 
 public abstract class UiTestBase : IDisposable
 {
     private bool disposed;
+    private readonly IDisposable _testLogContext;
 
     protected readonly WebDriverSession Session;
     protected readonly IWebDriver Driver;
@@ -16,9 +18,7 @@ public abstract class UiTestBase : IDisposable
     protected readonly string ScreenshotDirectory;
 
     private static readonly IConfigurationRoot _configurationRoot = Configuration.BuildConfiguration(AppContext.BaseDirectory);
-
-    private static readonly Configuration _configuration =
-        Configuration.FromRoot(_configurationRoot);
+    private static readonly Configuration _configuration = Configuration.FromRoot(_configurationRoot);
 
     static UiTestBase()
     {
@@ -35,6 +35,8 @@ public abstract class UiTestBase : IDisposable
     }
     protected UiTestBase()
     {
+        _testLogContext = LogContext.PushProperty("Scenario", GetType().Name);
+
         ScreenshotDirectory = TestDirectoriesHelper.GetScreenshotDirectory();
         Directory.CreateDirectory(ScreenshotDirectory);
 
@@ -49,15 +51,18 @@ public abstract class UiTestBase : IDisposable
 
     protected void RunWithLogging(Action testAction, string testName)
     {
-        try
+        using (LogContext.PushProperty("Scenario", testName))
         {
-            testAction();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Test failed: {TestName}", testName);
-            ScreenshotHelper.TakeScreenshot(Driver, ScreenshotDirectory, testName);
-            throw;
+            try
+            {
+                testAction();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Test failed: {TestName}", testName);
+                ScreenshotHelper.TakeScreenshot(Driver, ScreenshotDirectory, testName);
+                throw;
+            }
         }
     }
 
@@ -76,6 +81,7 @@ public abstract class UiTestBase : IDisposable
 
         if (disposing)
         {
+            _testLogContext?.Dispose();
             Session.Dispose();
 
             TestDirectoriesHelper.DeleteDirectoryIfExists(DownloadDirectory);

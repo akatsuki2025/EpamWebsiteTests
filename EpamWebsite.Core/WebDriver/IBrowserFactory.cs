@@ -4,5 +4,5 @@ namespace EpamWebsite.Core.WebDriver;
 
 public interface IBrowserFactory
 {
-    WebDriverSession Create(string downloadDirectory);
+    WebDriverSession Create(string? downloadDirectory);
 }
