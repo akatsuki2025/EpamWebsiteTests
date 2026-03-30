@@ -253,7 +253,7 @@ public class InsightsPage : BasePage
         Log.Debug("GetClickableNextArrowButton called.");
         var root = GetAndValidateCarouselRoot();
 
-        var arrow = Wait.Until(_ => root.FindElements(nextArrowBy).FirstOrDefault(e => e.Displayed && e.Enabled));
+        var arrow = WaitForDisplayedAndEnabledElement(nextArrowBy);
         if (arrow == null)
         {
             Log.Debug("Carousel next arrow not found, throwing exception.");

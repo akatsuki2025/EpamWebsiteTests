@@ -15,7 +15,9 @@ public class JobsPage : BasePage
 
     private static readonly string[] validWorkTypes = { "Remote", "Hybrid", "Office" };
 
-    public JobsPage(IWebDriver driver) : base(driver) { }
+    public JobsPage(IWebDriver driver) : base(driver) 
+    { 
+    }
 
     private static By GetLocationOptionBy(string location) =>
         By.XPath($"//div[contains(@class,'dropdown__option') and text()=\"{location}\"]");

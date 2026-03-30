@@ -1,6 +1,7 @@
 using EpamWebsiteTests.BusinessLayer.PageObjects;
 using OpenQA.Selenium;
 using EpamWebsite.Core;
+using Serilog;
 
 namespace EpamWebsite.BDDTests.StepDefinitions
 {
@@ -51,6 +52,8 @@ namespace EpamWebsite.BDDTests.StepDefinitions
             {
                 Assert.Contains(word, articleTitleLower);
             }
+
+            Log.Information("Validation passed: All words from the carousel title are present in the article title.");
         }
     }
 }

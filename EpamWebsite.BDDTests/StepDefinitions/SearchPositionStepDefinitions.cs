@@ -1,11 +1,13 @@
 ﻿using EpamWebsiteTests.BusinessLayer.PageObjects;
 using OpenQA.Selenium;
+using Serilog;
 
 namespace EpamWebsite.BDDTests.StepDefinitions;
 
 [Binding]
 public class SearchPositionStepDefinitions
 {
+    private readonly ScenarioContext _scenarioContext;
     private readonly IWebDriver _driver;
     private readonly MainPage _mainPage;
     private readonly CareersPage _careersPage;
@@ -13,6 +15,7 @@ public class SearchPositionStepDefinitions
 
     public SearchPositionStepDefinitions(ScenarioContext scenarioContext)
     {
+        _scenarioContext = scenarioContext;
         _driver = (IWebDriver)scenarioContext["WebDriver"];
         _mainPage = new MainPage(_driver);
         _careersPage = new CareersPage(_driver);
@@ -22,6 +25,7 @@ public class SearchPositionStepDefinitions
     [Given("I am on the EPAM main page")]
     public void GivenIAmOnTheEpamMainPage()
     {
+        Log.Information("=== STARTING TEST CASE: {ScenarioTitle} ===", _scenarioContext.ScenarioInfo.Title);
         _mainPage.OpenHomePageWithConsentCookie();
     }
 
@@ -66,5 +70,6 @@ public class SearchPositionStepDefinitions
     {
         var lastCardText = _jobsPage.ExpandAndGetLastCardText();
         Assert.Contains(keyword, lastCardText, StringComparison.OrdinalIgnoreCase);
+        Log.Information("Assertion passed: The last job card contains the keyword '{Keyword}'.", keyword);
     }
 }

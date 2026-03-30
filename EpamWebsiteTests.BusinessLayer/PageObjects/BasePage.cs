@@ -35,11 +35,9 @@ public abstract class BasePage
     {
         var expectedBase = Path.GetFileNameWithoutExtension(expectedFileName);
 
-        static bool IsPartial(string path) =>
-            path.EndsWith(".crdownload", StringComparison.OrdinalIgnoreCase);
+        static bool IsPartial(string path) => path.EndsWith(".crdownload", StringComparison.OrdinalIgnoreCase);
 
-        static bool IsNonEmpty(string path) =>
-            File.Exists(path) && new FileInfo(path).Length > 0;
+        static bool IsNonEmpty(string path) => File.Exists(path) && new FileInfo(path).Length > 0;
 
         var started = DateTime.UtcNow;
 
@@ -65,8 +63,7 @@ public abstract class BasePage
             ? string.Join(", ", Directory.EnumerateFiles(downloadDirectory).Select(Path.GetFileName))
             : "<directory missing>";
 
-        throw new TimeoutException(
-            $"File like '{expectedFileName}' was not downloaded within {timeout}. Found: {existing}");
+        throw new TimeoutException($"File like '{expectedFileName}' was not downloaded within {timeout}. Found: {existing}");
     }
 
     protected WebDriverWait CreateWait(int seconds, int pollingMs = 150, bool ignoreStale = true)
@@ -104,5 +101,32 @@ public abstract class BasePage
             var readyState = ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState") as string;
             return string.Equals(readyState, "complete", StringComparison.OrdinalIgnoreCase);
         });
+    }
+
+    protected IWebElement? WaitForDisplayedElement(By locator)
+    {
+        return Wait.Until(d =>
+            d.FindElements(locator)
+             .FirstOrDefault(e => e.Displayed)
+        );
+    }
+
+    protected IWebElement? WaitForDisplayedElementWithText(By locator, string expectedText, bool normalize = true)
+    {
+        return Wait.Until(d =>
+            d.FindElements(locator)
+             .FirstOrDefault(e =>
+                 e.Displayed &&
+                 (normalize ? Normalize(e.Text) : e.Text).Equals(expectedText, StringComparison.OrdinalIgnoreCase)
+             )
+        );
+    }
+
+    protected IWebElement? WaitForDisplayedAndEnabledElement(By locator)
+    {
+        return Wait.Until(d =>
+            d.FindElements(locator)
+             .FirstOrDefault(e => e.Displayed && e.Enabled)
+        );
     }
 }

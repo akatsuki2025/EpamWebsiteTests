@@ -13,6 +13,8 @@ public class MainPage : BasePage
     private readonly By globalSearchSubmitButton = By.XPath("//button[contains(@class,'custom-search-button') and .//span[contains(text(),'Find')]]");
     private readonly By globalSearchResultLinks = By.CssSelector(".search-results__item a");
     private readonly By codeOfEthicalConductPdfLink = By.CssSelector("footer a[href*='Code-Of-Conduct'][href$='.pdf']");
+    private readonly By servicesMenuItem = By.LinkText("Services");
+    private readonly By serviceCategoryLinks = By.CssSelector(".top-navigation__sub-link");
 
     public MainPage(IWebDriver driver) : base(driver)
     {
@@ -58,7 +60,7 @@ public class MainPage : BasePage
     public void EnterGlobalSearchKeyword(string keyword)
     {
         Log.Information("Entering global search keyword: {Keyword}", keyword);
-        var searchInput = Driver.FindElement(globalSearchInput);
+        var searchInput = WaitUntilClickable(globalSearchInput);
         searchInput.SendKeys(Keys.Control + "a");
         searchInput.SendKeys(Keys.Delete);
         searchInput.SendKeys(keyword);
@@ -95,16 +97,36 @@ public class MainPage : BasePage
     {
         Log.Information("Clicking Code of Ethical Conduct PDF link.");
 
-        var link = Wait.Until(d =>
+        var link = WaitForDisplayedAndEnabledElement(codeOfEthicalConductPdfLink);
+        if (link == null)
         {
-            var element = d.FindElements(codeOfEthicalConductPdfLink)
-                .FirstOrDefault(e => e.Displayed && e.Enabled);
-            return element;
-        });
+            Log.Warning("Code of Ethical Conduct PDF link not found or not enabled.");
+            return;
+        }
 
         ScrollToElement(link);
-
         Wait.Until(_ => link.Displayed && link.Enabled);
         link.Click();
+    }
+
+    public void HoverOverServicesMenu()
+    {
+        Log.Information("Hovering over the Services menu item.");
+        var servicesMenu = WaitUntilVisible(servicesMenuItem);
+        var actions = new OpenQA.Selenium.Interactions.Actions(Driver);
+        actions.MoveToElement(servicesMenu).Perform();
+    }
+
+    public void SelectServiceCategory(string serviceCategory)
+    {
+        Log.Information("Selecting {ServiceCategory} category from Services dropdown.", serviceCategory);
+        var categoryLink = WaitForDisplayedElementWithText(serviceCategoryLinks, serviceCategory);
+
+        if (categoryLink == null)
+        {
+            Log.Warning("Service category link with text '{ServiceCategory}' was not found.", serviceCategory);
+            return;
+        }
+        categoryLink.Click();
     }
 }
