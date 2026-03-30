@@ -15,7 +15,7 @@ public abstract class UiTestBase : IDisposable
     protected readonly WebDriverSession Session;
     protected readonly IWebDriver Driver;
     protected readonly string DownloadDirectory;
-    protected readonly string ScreenshotDirectory;
+    private static readonly string TestRunScreenshotDirectory;
 
     private static readonly IConfigurationRoot _configurationRoot = Configuration.BuildConfiguration(AppContext.BaseDirectory);
     private static readonly Configuration _configuration = Configuration.FromRoot(_configurationRoot);
@@ -24,6 +24,7 @@ public abstract class UiTestBase : IDisposable
     {
         Logger.InitLogger(_configurationRoot);
         var _ = typeof(LoggerShutdown);
+        TestRunScreenshotDirectory = TestDirectoriesHelper.GetScreenshotDirectory();
     }
 
     static class LoggerShutdown
@@ -31,14 +32,15 @@ public abstract class UiTestBase : IDisposable
         static LoggerShutdown()
         {
             AppDomain.CurrentDomain.ProcessExit += (s, e) => Logger.CloseAndFlush();
+            if (Directory.Exists(TestRunScreenshotDirectory) && !Directory.EnumerateFileSystemEntries(TestRunScreenshotDirectory).Any())
+            {
+                Directory.Delete(TestRunScreenshotDirectory);
+            }
         }
     }
     protected UiTestBase()
     {
         _testLogContext = LogContext.PushProperty("Scenario", GetType().Name);
-
-        ScreenshotDirectory = TestDirectoriesHelper.GetScreenshotDirectory();
-        Directory.CreateDirectory(ScreenshotDirectory);
 
         DownloadDirectory = TestDirectoriesHelper.GetDownloadDirectory();
         Directory.CreateDirectory(DownloadDirectory);
@@ -59,8 +61,13 @@ public abstract class UiTestBase : IDisposable
             }
             catch (Exception ex)
             {
+                if (!Directory.Exists(TestRunScreenshotDirectory))
+                {
+                    Directory.CreateDirectory(TestRunScreenshotDirectory);
+                }
+
                 Log.Error(ex, "Test failed: {TestName}", testName);
-                ScreenshotHelper.TakeScreenshot(Driver, ScreenshotDirectory, testName);
+                ScreenshotHelper.TakeScreenshot(Driver, TestRunScreenshotDirectory, testName);
                 throw;
             }
         }
@@ -86,9 +93,9 @@ public abstract class UiTestBase : IDisposable
 
             TestDirectoriesHelper.DeleteDirectoryIfExists(DownloadDirectory);
 
-            if (Directory.Exists(ScreenshotDirectory) && !Directory.EnumerateFileSystemEntries(ScreenshotDirectory).Any())
+            if (Directory.Exists(TestRunScreenshotDirectory) && !Directory.EnumerateFileSystemEntries(TestRunScreenshotDirectory).Any())
             {
-                Directory.Delete(ScreenshotDirectory, recursive: false);
+                Directory.Delete(TestRunScreenshotDirectory, recursive: false);
             }
         }
 

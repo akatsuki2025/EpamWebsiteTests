@@ -14,6 +14,7 @@ public class Hooks
     private IWebDriver _driver;
     private string _screenshotDirectory;
     private IDisposable? _scenarioLogContext;
+    private static string _testRunScreenshotDirectory;
 
     public Hooks(ScenarioContext scenarioContext)
     {
@@ -25,6 +26,7 @@ public class Hooks
     {
         var configurationRoot = Configuration.BuildConfiguration(AppContext.BaseDirectory);
         Logger.InitLogger(configurationRoot);
+        _testRunScreenshotDirectory = TestDirectoriesHelper.GetScreenshotDirectory();
     }
 
     [BeforeScenario]
@@ -38,9 +40,6 @@ public class Hooks
             Directory.CreateDirectory(downloadDirectory);
             _scenarioContext["DownloadDirectory"] = downloadDirectory;
         }
-
-        _screenshotDirectory = TestDirectoriesHelper.GetScreenshotDirectory();
-        Directory.CreateDirectory(_screenshotDirectory);
 
         var configurationRoot = Configuration.BuildConfiguration(AppContext.BaseDirectory);
         var configuration = Configuration.FromRoot(configurationRoot);
@@ -60,11 +59,16 @@ public class Hooks
     {
         if (_scenarioContext.TestError != null)
         {
+            if (!Directory.Exists(_testRunScreenshotDirectory))
+            {
+                Directory.CreateDirectory(_testRunScreenshotDirectory);
+            }
+
             Log.Error(_scenarioContext.TestError,
                 "Step failed: {StepText}",
                 _scenarioContext.StepContext.StepInfo.Text);
 
-            ScreenshotHelper.TakeScreenshot(_driver, _screenshotDirectory, _scenarioContext.ScenarioInfo.Title);
+            ScreenshotHelper.TakeScreenshot(_driver, _testRunScreenshotDirectory, _scenarioContext.ScenarioInfo.Title);
         }
     }
 
@@ -88,5 +92,10 @@ public class Hooks
     public static void AfterTestRun()
     {
         Log.CloseAndFlush();
+
+        if (Directory.Exists(_testRunScreenshotDirectory) && !Directory.EnumerateFileSystemEntries(_testRunScreenshotDirectory).Any())
+        {
+            Directory.Delete(_testRunScreenshotDirectory);
+        }
     }
 }
