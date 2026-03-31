@@ -37,6 +37,5 @@ public class DownloadFileStepDefinitions
         
         Log.Debug("Downloaded file path resolved: {DownloadedPath}", downloadedPath);
         Assert.Equal(fileName, Path.GetFileName(downloadedPath), ignoreCase: true);
-        Log.Information("Assertion passed: File '{FileName}' was successfully downloaded.", fileName);
     }
 }

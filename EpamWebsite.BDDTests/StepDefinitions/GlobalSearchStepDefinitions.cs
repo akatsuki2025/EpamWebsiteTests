@@ -40,6 +40,5 @@ public class GlobalSearchStepDefinitions
         Log.Information("Validating that all global search result links contain the keyword: {Keyword}", keyword);
         var links = _mainPage.GetGlobalSearchResultLinks();
         Assert.All(links, link => Assert.Contains(keyword, link.Text, StringComparison.OrdinalIgnoreCase));
-        Log.Information("Assertion passed: All global search result links contain the keyword '{Keyword}'.", keyword);
     }
 }

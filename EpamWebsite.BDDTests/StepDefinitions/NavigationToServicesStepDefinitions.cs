@@ -35,14 +35,12 @@ namespace EpamWebsite.BDDTests.StepDefinitions
         public void ThenThePageContainsTheTitle(string expectedTitle)
         {
             Assert.True(_servicesPage.PageContainsTitle(expectedTitle), $"The page does not contain the '{expectedTitle}' title.");
-            Log.Information("Assertion passed: The page contains the title '{ExpectedTitle}'.", expectedTitle);
         }
 
         [Then("the Our Related Expertise section is displayed")]
         public void ThenTheOurRelatedExpertiseSectionIsDisplayed()
         {
             Assert.True(_servicesPage.IsRelatedExpertiseSectionDisplayed(), "The 'Our Related Expertise' section is not displayed.");
-            Log.Information("Assertion passed: The 'Our Related Expertise' section is displayed.");
         }
     }
 }

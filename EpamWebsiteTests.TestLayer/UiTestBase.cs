@@ -38,6 +38,7 @@ public abstract class UiTestBase : IDisposable
             }
         }
     }
+
     protected UiTestBase()
     {
         _testLogContext = LogContext.PushProperty("Scenario", GetType().Name);
@@ -92,11 +93,6 @@ public abstract class UiTestBase : IDisposable
             Session.Dispose();
 
             TestDirectoriesHelper.DeleteDirectoryIfExists(DownloadDirectory);
-
-            if (Directory.Exists(TestRunScreenshotDirectory) && !Directory.EnumerateFileSystemEntries(TestRunScreenshotDirectory).Any())
-            {
-                Directory.Delete(TestRunScreenshotDirectory, recursive: false);
-            }
         }
 
         disposed = true;

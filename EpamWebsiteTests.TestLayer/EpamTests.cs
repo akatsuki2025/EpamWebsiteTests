@@ -31,8 +31,8 @@ public class EpamTests : UiTestBase
             string? jobCardText = jobsPage.ExpandAndGetLastCardText();
 
             Log.Information("Asserting that job card contains the keyword.");
+            
             Assert.Contains(keyword, jobCardText ?? string.Empty, StringComparison.OrdinalIgnoreCase);
-            Log.Information("[TEST END] SearchPositionTest passed.");
         }, nameof(SearchPositionTest));
     }
 
@@ -54,8 +54,8 @@ public class EpamTests : UiTestBase
             var links = mainPage.GetGlobalSearchResultLinks();
 
             Log.Information("Asserting all links contain the keyword.");
+
             Assert.All(links, link => Assert.Contains(keyword, link.Text, StringComparison.OrdinalIgnoreCase));
-            Log.Information("[TEST END] GlobalSearchTest passed.");
         }, nameof(GlobalSearchTest));
     }
 
@@ -79,8 +79,8 @@ public class EpamTests : UiTestBase
 
             Log.Information($"Downloaded file path: {downloadedPath}");
             Log.Information("Asserting downloaded file name matches expected.");
+
             Assert.Equal(fileName, Path.GetFileName(downloadedPath), ignoreCase: true);
-            Log.Information("[TEST END] DownloadFileTest passed.");
         }, nameof(DownloadFileTest));
     }
 
@@ -110,11 +110,7 @@ public class EpamTests : UiTestBase
             var carouselWords = TextProcessingHelper.ExtractNormalizedWords(carouselTitle);
             var articleTitleLower = articleTitle.ToLowerInvariant();
 
-            foreach (var word in carouselWords)
-            {
-                Assert.Contains(word, articleTitleLower);
-            }
-            Log.Information("[TEST END] CarouselArticleTitleMatchesDetailPageTest passed.");
+            Assert.All(carouselWords, word => Assert.Contains(word, articleTitleLower));
         }, nameof(CarouselArticleTitleMatchesDetailPageTest));
     }
 }

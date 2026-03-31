@@ -48,12 +48,7 @@ namespace EpamWebsite.BDDTests.StepDefinitions
             var carouselWords = TextProcessingHelper.ExtractNormalizedWords(_carouselTitle);
             var articleTitleLower = articleTitle.ToLowerInvariant();
 
-            foreach (var word in carouselWords)
-            {
-                Assert.Contains(word, articleTitleLower);
-            }
-
-            Log.Information("Validation passed: All words from the carousel title are present in the article title.");
+            Assert.All(carouselWords, word => Assert.Contains(word, articleTitleLower));
         }
     }
 }

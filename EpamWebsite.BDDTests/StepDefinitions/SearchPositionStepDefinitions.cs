@@ -70,6 +70,5 @@ public class SearchPositionStepDefinitions
     {
         var lastCardText = _jobsPage.ExpandAndGetLastCardText();
         Assert.Contains(keyword, lastCardText, StringComparison.OrdinalIgnoreCase);
-        Log.Information("Assertion passed: The last job card contains the keyword '{Keyword}'.", keyword);
     }
 }
