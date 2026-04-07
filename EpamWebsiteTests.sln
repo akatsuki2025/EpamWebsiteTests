@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpamWebsite.Core", "EpamWeb
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpamWebsite.BDDTests", "EpamWebsite.BDDTests\EpamWebsite.BDDTests.csproj", "{20CC61D3-C5E5-40E9-B435-A220B1118699}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiTests", "ApiTests\ApiTests.csproj", "{B159324D-F396-4070-8F1C-D490CD33524C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{20CC61D3-C5E5-40E9-B435-A220B1118699}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20CC61D3-C5E5-40E9-B435-A220B1118699}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{20CC61D3-C5E5-40E9-B435-A220B1118699}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B159324D-F396-4070-8F1C-D490CD33524C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B159324D-F396-4070-8F1C-D490CD33524C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B159324D-F396-4070-8F1C-D490CD33524C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B159324D-F396-4070-8F1C-D490CD33524C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
