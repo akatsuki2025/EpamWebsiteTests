@@ -1,6 +1,7 @@
 ﻿using EpamWebsite.Business.Models;
 using EpamWebsite.Core.ApiClient;
 using NUnit.Framework;
+using RestSharp;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text.Json;
@@ -25,8 +26,14 @@ public class JsonPlaceholderApiTests
     [Test]
     public async Task GetUsers_ShouldReturn200AndExpectedFields()
     {
+        // Arrange
+        var request = new RestRequestBuilder()
+            .WithEndpoint("/users")
+            .WithMethod(Method.Get)
+            .Build();
+
         // Act
-        var response = await _apiClient.GetAsync("/users");
+        var response = await _apiClient.ExecuteAsync(request);
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
@@ -54,8 +61,14 @@ public class JsonPlaceholderApiTests
     [Test]
     public async Task GetUserById_ShouldReturn200AndExpectedContentTypeHeader()
     {
+        // Arrange
+        var request = new RestRequestBuilder()
+            .WithEndpoint("/users")
+            .WithMethod(Method.Get)
+            .Build();
+
         // Act
-        var response = await _apiClient.GetAsync("/users");
+        var response = await _apiClient.ExecuteAsync(request);
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
@@ -73,8 +86,14 @@ public class JsonPlaceholderApiTests
     [Test]
     public async Task GetUsers_ShouldReturn200AndTenUniqueUsersWithRequiredFields()
     {
+        // Arrange
+        var request = new RestRequestBuilder()
+            .WithEndpoint("/users")
+            .WithMethod(Method.Get)
+            .Build();
+
         // Act
-        var response = await _apiClient.GetAsync("/users");
+        var response = await _apiClient.ExecuteAsync(request);
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
@@ -102,12 +121,15 @@ public class JsonPlaceholderApiTests
     [Test]
     public async Task CreateUser_ShouldReturn201AndCreatedUserId()
     {
+        // Arrange
+        var request = new RestRequestBuilder()
+            .WithEndpoint("/users")
+            .WithMethod(Method.Post)
+            .WithJsonBody(new { name = "Test User", username = "test.user" })
+            .Build();
+
         // Act
-        var response = await _apiClient.PostAsync("/users", new
-        {
-            name = "Test User",
-            username = "test.user"
-        });
+        var response = await _apiClient.ExecuteAsync(request);
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.Created));
@@ -126,8 +148,14 @@ public class JsonPlaceholderApiTests
     [Test]
     public async Task InvalidEndpoint_ShouldReturn404AndNoTransportErrors()
     {
+        // Arrange
+        var request = new RestRequestBuilder()
+            .WithEndpoint("/invalidendpoint")
+            .WithMethod(Method.Get)
+            .Build();
+
         // Act
-        var response = await _apiClient.GetAsync("/invalid-endpoint");
+        var response = await _apiClient.ExecuteAsync(request);
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.NotFound));
