@@ -1,12 +1,14 @@
 ﻿using RestSharp;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Xunit;
+using NUnit.Framework;
 using System.Net.Http.Headers;
 
+[assembly: LevelOfParallelism(4)]
 namespace ApiTests;
 
-[Trait("Category", "API")]
+[Parallelizable(ParallelScope.All)]
+[Category("API")]
 public class JsonPlaceholderApiTests
 {
     public sealed class UserDto
@@ -21,7 +23,7 @@ public class JsonPlaceholderApiTests
         [JsonPropertyName("company")] public JsonElement Company { get; init; }
     }
 
-    [Fact]
+    [Test]
     public async Task GetUsers_ShouldReturn200AndExpectedFields()
     {
         // Arrange
@@ -30,31 +32,31 @@ public class JsonPlaceholderApiTests
         var request = new RestRequest("/users", Method.Get);
 
         // Act
-        var response = await client.ExecuteAsync(request, TestContext.Current.CancellationToken);
+        var response = await client.ExecuteAsync(request);
 
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-        Assert.Null(response.ErrorException);
-        Assert.True(string.IsNullOrWhiteSpace(response.ErrorMessage));
+        Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
+        Assert.That(response.ErrorException, Is.Null);
+        Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
 
-        Assert.False(string.IsNullOrEmpty(response.Content));
+        Assert.That(string.IsNullOrEmpty(response.Content), Is.False);
 
         using var usersResponseDocument = JsonDocument.Parse(response.Content!);
         var users = usersResponseDocument.RootElement.EnumerateArray().ToList();
 
-        Assert.NotEmpty(users);
+        Assert.That(users, Is.Not.Empty);
 
         var requiredFields = new[]
         {
             "id", "name", "username", "email", "address", "phone", "website", "company"
         };
 
-        Assert.True(users.All(user =>
+        Assert.That(users.All(user =>
             user.ValueKind == JsonValueKind.Object &&
-            requiredFields.All(field => user.TryGetProperty(field, out _))));
+            requiredFields.All(field => user.TryGetProperty(field, out _))), Is.True);
     }
 
-    [Fact]
+    [Test]
     public async Task GetUserById_ShouldReturn200AndExpectedContentTypeHeader()
     {
         // Arrange
@@ -63,12 +65,12 @@ public class JsonPlaceholderApiTests
         var request = new RestRequest("/users", Method.Get);
 
         // Act
-        var response = await client.ExecuteAsync(request, TestContext.Current.CancellationToken);
+        var response = await client.ExecuteAsync(request);
 
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-        Assert.Null(response.ErrorException);
-        Assert.True(string.IsNullOrWhiteSpace(response.ErrorMessage));
+        Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
+        Assert.That(response.ErrorException, Is.Null);
+        Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
 
         var rawContentType =
             response.ContentHeaders?
@@ -79,14 +81,14 @@ public class JsonPlaceholderApiTests
                 ?.Value?.ToString()
             ?? response.ContentType;
 
-        Assert.False(string.IsNullOrWhiteSpace(rawContentType));
+        Assert.That(string.IsNullOrWhiteSpace(rawContentType), Is.False);
 
         var parsed = MediaTypeHeaderValue.Parse(rawContentType!);
-        Assert.Equal("application/json", parsed.MediaType);
-        Assert.Equal("utf-8", parsed.CharSet, ignoreCase: true);
+        Assert.That(parsed.MediaType, Is.EqualTo("application/json"));
+        Assert.That(parsed.CharSet, Is.EqualTo("utf-8").IgnoreCase);
     }
 
-    [Fact]
+    [Test]
     public async Task GetUsers_ShouldReturn200AndTenUniqueUsersWithRequiredFields()
     {
         // Arrange
@@ -95,32 +97,32 @@ public class JsonPlaceholderApiTests
         var request = new RestRequest("/users", Method.Get);
 
         // Act
-        var response = await client.ExecuteAsync(request, TestContext.Current.CancellationToken);
+        var response = await client.ExecuteAsync(request);
 
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-        Assert.Null(response.ErrorException);
-        Assert.True(string.IsNullOrWhiteSpace(response.ErrorMessage));
+        Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
+        Assert.That(response.ErrorException, Is.Null);
+        Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
 
-        Assert.False(string.IsNullOrEmpty(response.Content));
+        Assert.That(string.IsNullOrEmpty(response.Content), Is.False);
         var users = JsonSerializer.Deserialize<List<UserDto>>(response.Content!);
-        Assert.NotNull(users);
-        Assert.Equal(10, users.Count);
+        Assert.That(users, Is.Not.Null);
+        Assert.That(users!.Count, Is.EqualTo(10));
 
         var uniqueIdsCount = users.Select(user => user.Id).Distinct().Count();
-        Assert.Equal(users.Count, uniqueIdsCount);
+        Assert.That(users.Count, Is.EqualTo(uniqueIdsCount));
 
-        Assert.True(users.All(user =>
+        Assert.That(users.All(user =>
             !string.IsNullOrWhiteSpace(user.Name) &&
-            !string.IsNullOrWhiteSpace(user.Username)));
+            !string.IsNullOrWhiteSpace(user.Username)), Is.True);
 
-        Assert.True(users.All(user =>
+        Assert.That(users.All(user =>
             user.Company.ValueKind == JsonValueKind.Object &&
             user.Company.TryGetProperty("name", out var companyName) &&
-            !string.IsNullOrWhiteSpace(companyName.GetString())));
+            !string.IsNullOrWhiteSpace(companyName.GetString())), Is.True);
     }
 
-    [Fact]
+    [Test]
     public async Task CreateUser_ShouldReturn201AndCreatedUserId()
     {
         // Arrange
@@ -135,23 +137,23 @@ public class JsonPlaceholderApiTests
         });
 
         // Act
-        var response = await client.ExecuteAsync(request, TestContext.Current.CancellationToken);
+        var response = await client.ExecuteAsync(request);
 
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.Created, response.StatusCode);
-        Assert.Null(response.ErrorException);
-        Assert.True(string.IsNullOrWhiteSpace(response.ErrorMessage));
+        Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.Created));
+        Assert.That(response.ErrorException, Is.Null);
+        Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
 
-        Assert.False(string.IsNullOrEmpty(response.Content));
+        Assert.That(string.IsNullOrEmpty(response.Content), Is.False);
 
         using var createdUserResponseDocument = JsonDocument.Parse(response.Content!);
         var responseObject = createdUserResponseDocument.RootElement;
 
-        Assert.Equal(JsonValueKind.Object, responseObject.ValueKind);
-        Assert.True(responseObject.TryGetProperty("id", out _));
+        Assert.That(responseObject.ValueKind, Is.EqualTo(JsonValueKind.Object));
+        Assert.That(responseObject.TryGetProperty("id", out _), Is.True);
     }
 
-    [Fact]
+    [Test]
     public async Task InvalidEndpoint_ShouldReturn404AndNoTransportErrors()
     {
         // Arrange
@@ -160,10 +162,10 @@ public class JsonPlaceholderApiTests
         var request = new RestRequest("/invalid-endpoint", Method.Get);
 
         // Act
-        var response = await client.ExecuteAsync(request, TestContext.Current.CancellationToken);
+        var response = await client.ExecuteAsync(request);
 
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
-        Assert.True(string.IsNullOrWhiteSpace(response.ErrorMessage));
+        Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.NotFound));
+        Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
     }
 }
