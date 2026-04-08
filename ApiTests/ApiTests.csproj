@@ -15,4 +15,9 @@
     <PackageReference Include="RestSharp" Version="114.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\EpamWebsite.Core\EpamWebsite.Core.csproj" />
+    <ProjectReference Include="..\EpamWebsiteTests.BusinessLayer\EpamWebsite.Business.csproj" />
+  </ItemGroup>
+
 </Project>

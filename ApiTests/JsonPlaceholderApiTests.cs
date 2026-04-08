@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using NUnit.Framework;
 using System.Net.Http.Headers;
+using EpamWebsite.Core.ApiClient;
 
 [assembly: LevelOfParallelism(4)]
 namespace ApiTests;
@@ -11,6 +12,15 @@ namespace ApiTests;
 [Category("API")]
 public class JsonPlaceholderApiTests
 {
+    private const string BaseUrl = "https://jsonplaceholder.typicode.com";
+    private BaseApiClient _apiClient;
+
+    [SetUp] 
+    public void Setup()
+    {
+        _apiClient = new BaseApiClient(BaseUrl);
+    }
+
     public sealed class UserDto
     {
         [JsonPropertyName("id")] public int Id { get; init; }
@@ -26,13 +36,8 @@ public class JsonPlaceholderApiTests
     [Test]
     public async Task GetUsers_ShouldReturn200AndExpectedFields()
     {
-        // Arrange
-        var clientOptions = new RestClientOptions("https://jsonplaceholder.typicode.com");
-        var client = new RestClient(clientOptions);
-        var request = new RestRequest("/users", Method.Get);
-
         // Act
-        var response = await client.ExecuteAsync(request);
+        var response = await _apiClient.GetAsync("/users");
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
@@ -59,13 +64,8 @@ public class JsonPlaceholderApiTests
     [Test]
     public async Task GetUserById_ShouldReturn200AndExpectedContentTypeHeader()
     {
-        // Arrange
-        var clientOptions = new RestClientOptions("https://jsonplaceholder.typicode.com");
-        var client = new RestClient(clientOptions);
-        var request = new RestRequest("/users", Method.Get);
-
         // Act
-        var response = await client.ExecuteAsync(request);
+        var response = await _apiClient.GetAsync("/users");
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
@@ -91,13 +91,8 @@ public class JsonPlaceholderApiTests
     [Test]
     public async Task GetUsers_ShouldReturn200AndTenUniqueUsersWithRequiredFields()
     {
-        // Arrange
-        var clientOptions = new RestClientOptions("https://jsonplaceholder.typicode.com");
-        var client = new RestClient(clientOptions);
-        var request = new RestRequest("/users", Method.Get);
-
         // Act
-        var response = await client.ExecuteAsync(request);
+        var response = await _apiClient.GetAsync("/users");
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
@@ -125,19 +120,12 @@ public class JsonPlaceholderApiTests
     [Test]
     public async Task CreateUser_ShouldReturn201AndCreatedUserId()
     {
-        // Arrange
-        var clientOptions = new RestClientOptions("https://jsonplaceholder.typicode.com");
-        var client = new RestClient(clientOptions);
-        var request = new RestRequest("/users", Method.Post);
-            
-        request.AddJsonBody(new
+        // Act
+        var response = await _apiClient.PostAsync("/users", new
         {
             name = "Test User",
             username = "test.user"
         });
-
-        // Act
-        var response = await client.ExecuteAsync(request);
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.Created));
@@ -156,13 +144,8 @@ public class JsonPlaceholderApiTests
     [Test]
     public async Task InvalidEndpoint_ShouldReturn404AndNoTransportErrors()
     {
-        // Arrange
-        var clientOptions = new RestClientOptions("https://jsonplaceholder.typicode.com");
-        var client = new RestClient(clientOptions);
-        var request = new RestRequest("/invalid-endpoint", Method.Get);
-
         // Act
-        var response = await client.ExecuteAsync(request);
+        var response = await _apiClient.GetAsync("/invalid-endpoint");
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.NotFound));
