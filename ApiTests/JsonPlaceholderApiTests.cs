@@ -1,9 +1,10 @@
-﻿using RestSharp;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using EpamWebsite.Business.Models;
+using EpamWebsite.Core.ApiClient;
 using NUnit.Framework;
 using System.Net.Http.Headers;
-using EpamWebsite.Core.ApiClient;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 [assembly: LevelOfParallelism(4)]
 namespace ApiTests;
@@ -13,24 +14,12 @@ namespace ApiTests;
 public class JsonPlaceholderApiTests
 {
     private const string BaseUrl = "https://jsonplaceholder.typicode.com";
-    private BaseApiClient _apiClient;
+    private BaseApiClient _apiClient = null!;
 
     [SetUp] 
     public void Setup()
     {
         _apiClient = new BaseApiClient(BaseUrl);
-    }
-
-    public sealed class UserDto
-    {
-        [JsonPropertyName("id")] public int Id { get; init; }
-        [JsonPropertyName("name")] public string Name { get; init; } = string.Empty;
-        [JsonPropertyName("username")] public string Username { get; init; } = string.Empty;
-        [JsonPropertyName("email")] public string Email { get; init; } = string.Empty;
-        [JsonPropertyName("address")] public JsonElement Address { get; init; }
-        [JsonPropertyName("phone")] public string Phone { get; init; } = string.Empty;
-        [JsonPropertyName("website")] public string Website { get; init; } = string.Empty;
-        [JsonPropertyName("company")] public JsonElement Company { get; init; }
     }
 
     [Test]
@@ -51,10 +40,11 @@ public class JsonPlaceholderApiTests
 
         Assert.That(users, Is.Not.Empty);
 
-        var requiredFields = new[]
-        {
-            "id", "name", "username", "email", "address", "phone", "website", "company"
-        };
+        var requiredFields = typeof(UserDto)
+            .GetProperties()
+            .Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name)
+            .OfType<string>()
+            .ToHashSet();
 
         Assert.That(users.All(user =>
             user.ValueKind == JsonValueKind.Object &&
@@ -72,15 +62,7 @@ public class JsonPlaceholderApiTests
         Assert.That(response.ErrorException, Is.Null);
         Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
 
-        var rawContentType =
-            response.ContentHeaders?
-                .FirstOrDefault(h => string.Equals(h.Name?.ToString(), "Content-Type", StringComparison.OrdinalIgnoreCase))
-                ?.Value?.ToString()
-            ?? response.Headers?
-                .FirstOrDefault(h => string.Equals(h.Name?.ToString(), "Content-Type", StringComparison.OrdinalIgnoreCase))
-                ?.Value?.ToString()
-            ?? response.ContentType;
-
+        var rawContentType = response.GetContentType();
         Assert.That(string.IsNullOrWhiteSpace(rawContentType), Is.False);
 
         var parsed = MediaTypeHeaderValue.Parse(rawContentType!);
