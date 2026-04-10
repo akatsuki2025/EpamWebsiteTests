@@ -1,8 +1,5 @@
 name: CI Tests
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 on:
   pull_request:
     branches:
@@ -35,4 +32,30 @@ jobs:
         with:
           name: api-test-results
           path: artifacts/test-results/api/**/*.trx
+          if-no-files-found: warn
+  ui-tests:
+    runs-on: windows-latest
+    needs: api-tests
+    if: ${{ always() }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run UI tests (manual browser selection)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          WebDriver__Browser: ${{ github.event.inputs.browser }}
+        run: dotnet test EpamWebsiteTests.TestLayer/EpamWebsite.Tests.csproj --configuration Release --logger "trx;LogFileName=ui-tests.trx" --results-directory artifacts/test-results/ui
+
+      - name: Run UI tests (browser from config)
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        run: dotnet test EpamWebsiteTests.TestLayer/EpamWebsite.Tests.csproj --configuration Release --logger "trx;LogFileName=ui-tests.trx" --results-directory artifacts/test-results/ui
+
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: artifacts/test-results/ui/**/*.trx
           if-no-files-found: warn
