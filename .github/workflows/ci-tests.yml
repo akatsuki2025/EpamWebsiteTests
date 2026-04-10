@@ -30,10 +30,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - run: dotnet test ApiTests/ApiTests.csproj --configuration Release --results-directory artifacts/test-results/api
+      - run: dotnet test [ApiTests.csproj](http://_vscodecontentref_/1) --configuration Release --logger "trx;LogFileName=api-tests.trx" --results-directory artifacts/test-results/api
       - if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: api-test-results
-          path: artifacts/test-results/api/**
+          path: artifacts/test-results/api/**/*.trx
           if-no-files-found: warn
