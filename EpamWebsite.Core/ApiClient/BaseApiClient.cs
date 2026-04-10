@@ -16,4 +16,10 @@ public class BaseApiClient
     {
         return await _client.ExecuteAsync(request, cancellationToken);
     }
+
+    public async Task<RestResponse<T>> ExecuteAsync<T>(RestRequest request, CancellationToken cancellationToken = default)
+        where T : notnull
+    {
+        return await _client.ExecuteAsync<T>(request, cancellationToken);
+    }
 }
