@@ -18,15 +18,16 @@ namespace ApiTests;
 [Category("API")]
 public class JsonPlaceholderApiTests
 {
-    private const string BaseUrl = "https://jsonplaceholder.typicode.com";
     private BaseApiClient _apiClient = null!;
     private IDisposable? _scenarioLogContext;
     private static IConfigurationRoot _configurationRoot = null!;
+    private static Configuration _configuration = null!;
 
     [OneTimeSetUp]
     public void OneTimeSetup()
     {
         _configurationRoot = Configuration.BuildConfiguration(AppContext.BaseDirectory);
+        _configuration = Configuration.FromRoot(_configurationRoot);
         Logger.InitLogger(_configurationRoot);
         Log.Information("API test run started.");
     }
@@ -41,7 +42,7 @@ public class JsonPlaceholderApiTests
     [SetUp] 
     public void Setup()
     {
-        _apiClient = new BaseApiClient(BaseUrl);
+        _apiClient = new BaseApiClient(_configuration.Api.BaseUrl);
         var testName = TestContext.CurrentContext.Test.Name;
         _scenarioLogContext = LogContext.PushProperty("Scenario", testName);
         Log.Information("[TEST START] {TestName}", testName);
@@ -82,9 +83,9 @@ public class JsonPlaceholderApiTests
         Log.Information("Assert: validating status and transport errors.");
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
         Assert.That(response.ErrorException, Is.Null);
-        Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
+        Assert.That(response.ErrorMessage, Is.Null.Or.WhiteSpace);
 
-        Assert.That(string.IsNullOrEmpty(response.Content), Is.False);
+        Assert.That(response.Content, Is.Not.Null.Or.WhiteSpace);
 
         using var usersResponseDocument = JsonDocument.Parse(response.Content!);
         var users = usersResponseDocument.RootElement.EnumerateArray().ToList();
@@ -120,10 +121,10 @@ public class JsonPlaceholderApiTests
         Log.Information("Assert: validating status and content-type header.");
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
         Assert.That(response.ErrorException, Is.Null);
-        Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
+        Assert.That(response.ErrorMessage, Is.Null.Or.WhiteSpace);
 
         var rawContentType = response.GetContentType();
-        Assert.That(string.IsNullOrWhiteSpace(rawContentType), Is.False);
+        Assert.That(rawContentType, Is.Not.Null.Or.WhiteSpace);
 
         var parsed = MediaTypeHeaderValue.Parse(rawContentType!);
         Assert.That(parsed.MediaType, Is.EqualTo("application/json"));
@@ -147,15 +148,15 @@ public class JsonPlaceholderApiTests
         Log.Information("Assert: validating status and response body structure.");
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
         Assert.That(response.ErrorException, Is.Null);
-        Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
+        Assert.That(response.ErrorMessage, Is.Null.Or.WhiteSpace);
 
-        Assert.That(string.IsNullOrEmpty(response.Content), Is.False);
+        Assert.That(response.Content, Is.Not.Null.Or.WhiteSpace);
         var users = JsonSerializer.Deserialize<List<UserDto>>(response.Content!);
         Assert.That(users, Is.Not.Null);
-        Assert.That(users!.Count, Is.EqualTo(10));
+        Assert.That(users, Has.Count.EqualTo(10));
 
-        var uniqueIdsCount = users.Select(user => user.Id).Distinct().Count();
-        Assert.That(users.Count, Is.EqualTo(uniqueIdsCount));
+        var uniqueIdsCount = users!.Select(user => user.Id).Distinct().Count();
+        Assert.That(users, Has.Count.EqualTo(uniqueIdsCount));
 
         Assert.That(users.All(user =>
             !string.IsNullOrWhiteSpace(user.Name) &&
@@ -185,9 +186,9 @@ public class JsonPlaceholderApiTests
         Log.Information("Assert: validating status and created object.");
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.Created));
         Assert.That(response.ErrorException, Is.Null);
-        Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
+        Assert.That(response.ErrorMessage, Is.Null.Or.WhiteSpace);
 
-        Assert.That(string.IsNullOrEmpty(response.Content), Is.False);
+        Assert.That(response.Content, Is.Not.Null.Or.WhiteSpace);
 
         using var createdUserResponseDocument = JsonDocument.Parse(response.Content!);
         var responseObject = createdUserResponseDocument.RootElement;
@@ -212,6 +213,6 @@ public class JsonPlaceholderApiTests
         // Assert
         Log.Information("Assert: validating 404 and no transport-level error message.");
         Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.NotFound));
-        Assert.That(string.IsNullOrWhiteSpace(response.ErrorMessage), Is.True);
+        Assert.That(response.ErrorMessage, Is.Null.Or.WhiteSpace);
     }
 }

@@ -6,6 +6,7 @@ public class Configuration
 {
     public SerilogConfig Serilog { get; set; } = new();
     public WebDriverConfig WebDriver { get; set; } = new();
+    public ApiConfig Api { get; set; } = new();
 
     public static IConfigurationRoot BuildConfiguration(string basePath)
     {
@@ -36,4 +37,9 @@ public class MinimumLevelConfig
 public class WebDriverConfig
 {
     public string Browser { get; set; } = "Chrome";
+}
+
+public class ApiConfig
+{
+    public string BaseUrl { get; set; } = string.Empty;
 }
