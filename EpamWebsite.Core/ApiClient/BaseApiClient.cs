@@ -1,4 +1,5 @@
 ﻿using RestSharp;
+using Serilog;
 
 namespace EpamWebsite.Core.ApiClient;
 
@@ -14,12 +15,28 @@ public class BaseApiClient
 
     public async Task<RestResponse> ExecuteAsync(RestRequest request, CancellationToken cancellationToken = default)
     {
-        return await _client.ExecuteAsync(request, cancellationToken);
+        var response = await _client.ExecuteAsync(request, cancellationToken);
+
+        Log.Information(
+            "HTTP {Method} {Endpoint} -> {StatusCode}",
+            request.Method,
+            request.Resource,
+            (int)response.StatusCode);
+
+        return response;
     }
 
     public async Task<RestResponse<T>> ExecuteAsync<T>(RestRequest request, CancellationToken cancellationToken = default)
         where T : notnull
     {
-        return await _client.ExecuteAsync<T>(request, cancellationToken);
+        var response = await _client.ExecuteAsync<T>(request, cancellationToken);
+
+        Log.Information(
+            "HTTP {Method} {Endpoint} -> {StatusCode}",
+            request.Method,
+            request.Resource,
+            (int)response.StatusCode);
+
+        return response;
     }
 }

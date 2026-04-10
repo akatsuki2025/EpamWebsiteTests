@@ -76,7 +76,6 @@ public class JsonPlaceholderApiTests
             .Build();
 
         // Act
-        Log.Information("Sending GET /users");
         var response = await _apiClient.ExecuteAsync(request);
 
         // Assert
@@ -116,7 +115,6 @@ public class JsonPlaceholderApiTests
             .Build();
 
         // Act
-        Log.Information("Sending GET /users for header validation");
         var response = await _apiClient.ExecuteAsync(request);
 
         // Assert
@@ -149,7 +147,6 @@ public class JsonPlaceholderApiTests
             .Build();
 
         // Act
-        Log.Information("Sending GET /users for body validation");
         var response = await _apiClient.ExecuteAsync<List<UserDto>>(request);
 
         // Assert
@@ -168,15 +165,10 @@ public class JsonPlaceholderApiTests
         {
             Assert.That(users, Is.Not.Null);
             Assert.That(users, Has.Count.EqualTo(10));
-        });
-
-        var uniqueIdsCount = users!.Select(user => user.Id).Distinct().Count();
-        Assert.Multiple(() =>
-        {
-            Assert.That(users, Has.Count.EqualTo(uniqueIdsCount));
-            Assert.That(users.All(user =>
+            Assert.That(users.Select(user => user.Id), Is.Unique);
+            Assert.That(users, Has.All.Matches<UserDto>(user =>
                 !string.IsNullOrWhiteSpace(user.Name) &&
-                !string.IsNullOrWhiteSpace(user.Username)), Is.True);
+                !string.IsNullOrWhiteSpace(user.Username)));
             Assert.That(users.All(user =>
                 user.Company.ValueKind == JsonValueKind.Object &&
                 user.Company.TryGetProperty("name", out var companyName) &&
@@ -195,7 +187,6 @@ public class JsonPlaceholderApiTests
             .Build();
 
         // Act
-        Log.Information("Sending POST /users");
         var response = await _apiClient.ExecuteAsync<CreateUserResponseDto>(request);
 
         // Assert
@@ -222,7 +213,6 @@ public class JsonPlaceholderApiTests
             .Build();
 
         // Act
-        Log.Information("Sending GET /invalidendpoint");
         var response = await _apiClient.ExecuteAsync(request);
 
         // Assert
