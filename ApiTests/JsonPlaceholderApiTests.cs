@@ -1,6 +1,7 @@
 ﻿using EpamWebsite.Business.Models;
 using EpamWebsite.Core;
 using EpamWebsite.Core.ApiClient;
+using EpamWebsite.Core.Configurations;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 using RestSharp;

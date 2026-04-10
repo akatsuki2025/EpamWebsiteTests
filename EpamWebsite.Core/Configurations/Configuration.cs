@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 
-namespace EpamWebsite.Core;
+namespace EpamWebsite.Core.Configurations;
 
 public class Configuration
 {
@@ -13,6 +13,7 @@ public class Configuration
         return new ConfigurationBuilder()
             .SetBasePath(basePath ?? AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddEnvironmentVariables()
             .Build();
     }
 
@@ -22,24 +23,4 @@ public class Configuration
         configRoot.Bind(config);
         return config;
     }
-}
-
-public class SerilogConfig
-{
-    public MinimumLevelConfig MinimumLevel { get; set; } = new();
-}
-
-public class MinimumLevelConfig
-{
-    public string Default { get; set; } = "Information";
-}
-
-public class WebDriverConfig
-{
-    public string Browser { get; set; } = "Chrome";
-}
-
-public class ApiConfig
-{
-    public string BaseUrl { get; set; } = string.Empty;
 }

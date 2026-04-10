@@ -1,0 +1,31 @@
+name: CI Tests
+
+on:
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: 'Browser for UI tests'
+        required: true
+        default: chrome
+        type: choice
+        options:
+          - chrome
+          - edge
+
+jobs:
+  validate-triggers:
+    runs-on: windows-latest
+    env:
+      MANUAL_BROWSER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browser || '' }}
+    steps:
+      - name: Show trigger context
+        shell: pwsh
+        run: |
+          Write-Host "Event: ${{ github.event_name }}"
+          Write-Host "Manual browser input: $env:MANUAL_BROWSER"
+          Write-Host "Browser source: [appsettings.json](http://_vscodecontentref_/0) -> WebDriver:Browser"

@@ -1,4 +1,5 @@
 ﻿using EpamWebsite.Core;
+using EpamWebsite.Core.Configurations;
 using EpamWebsite.Core.WebDriver;
 using Microsoft.Extensions.Configuration;
 using OpenQA.Selenium;
