@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using OpenQA.Selenium;
 using Serilog;
 using Serilog.Context;
+using Xunit;
 
 namespace EpamWebsiteTests.TestLayer;
 
@@ -12,6 +13,7 @@ public abstract class UiTestBase : IDisposable
 {
     private bool disposed;
     private readonly IDisposable _testLogContext;
+    private readonly string _testName;
 
     protected readonly WebDriverSession Session;
     protected readonly IWebDriver Driver;
@@ -24,24 +26,23 @@ public abstract class UiTestBase : IDisposable
     static UiTestBase()
     {
         Logger.InitLogger(_configurationRoot);
-        var _ = typeof(LoggerShutdown);
         TestRunScreenshotDirectory = TestDirectoriesHelper.GetScreenshotDirectory();
-    }
 
-    static class LoggerShutdown
-    {
-        static LoggerShutdown()
+        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
-            AppDomain.CurrentDomain.ProcessExit += (s, e) => Logger.CloseAndFlush();
-            if (Directory.Exists(TestRunScreenshotDirectory) && !Directory.EnumerateFileSystemEntries(TestRunScreenshotDirectory).Any())
+            Logger.CloseAndFlush();
+
+            if (Directory.Exists(TestRunScreenshotDirectory) &&
+                !Directory.EnumerateFileSystemEntries(TestRunScreenshotDirectory).Any())
             {
                 Directory.Delete(TestRunScreenshotDirectory);
             }
-        }
+        };
     }
 
     protected UiTestBase()
     {
+        _testName = TestContext.Current.Test?.TestDisplayName ?? GetType().Name;
         _testLogContext = LogContext.PushProperty("Scenario", GetType().Name);
 
         DownloadDirectory = TestDirectoriesHelper.GetDownloadDirectory();
@@ -51,28 +52,6 @@ public abstract class UiTestBase : IDisposable
         Session = WebDriverFactory.Create(browserType, DownloadDirectory);
         Session.StartBrowser();
         Driver = Session.Driver;
-    }
-
-    protected void RunWithLogging(Action testAction, string testName)
-    {
-        using (LogContext.PushProperty("Scenario", testName))
-        {
-            try
-            {
-                testAction();
-            }
-            catch (Exception ex)
-            {
-                if (!Directory.Exists(TestRunScreenshotDirectory))
-                {
-                    Directory.CreateDirectory(TestRunScreenshotDirectory);
-                }
-
-                Log.Error(ex, "Test failed: {TestName}", testName);
-                ScreenshotHelper.TakeScreenshot(Driver, TestRunScreenshotDirectory, testName);
-                throw;
-            }
-        }
     }
 
     public void Dispose()
@@ -90,6 +69,8 @@ public abstract class UiTestBase : IDisposable
 
         if (disposing)
         {
+            TryCaptureScreenshotOnFailure();
+
             _testLogContext?.Dispose();
             Session.Dispose();
 
@@ -97,5 +78,29 @@ public abstract class UiTestBase : IDisposable
         }
 
         disposed = true;
+    }
+
+    private void TryCaptureScreenshotOnFailure()
+    {
+        try
+        {
+            var testState = TestContext.Current.TestState;
+            if (testState?.Result != TestResult.Failed)
+            {
+                return;
+            }
+
+            if (!Directory.Exists(TestRunScreenshotDirectory))
+            {
+                Directory.CreateDirectory(TestRunScreenshotDirectory);
+            }
+
+            Log.Error("Test failed: {TestName}", _testName);
+            ScreenshotHelper.TakeScreenshot(Driver, TestRunScreenshotDirectory, _testName);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to capture screenshot during dispose.");
+        }
     }
 }
