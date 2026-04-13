@@ -47,15 +47,28 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           WebDriver__Browser: ${{ github.event.inputs.browser }}
-        run: dotnet test EpamWebsiteTests.TestLayer/EpamWebsite.Tests.csproj --configuration Release --logger "trx;LogFileName=ui-tests.trx" --results-directory artifacts/test-results/ui
+        run: |
+          dotnet test EpamWebsiteTests.TestLayer/EpamWebsite.Tests.csproj --configuration Release --logger "trx;LogFileName=ui-tests.trx" --results-directory artifacts/test-results/ui
+          dotnet test EpamWebsite.BDDTests/EpamWebsite.BDDTests.csproj --configuration Release --logger "trx;LogFileName=bdd-ui-tests.trx" --results-directory artifacts/test-results/ui-bdd
 
       - name: Run UI tests (browser from config)
         if: ${{ github.event_name != 'workflow_dispatch' }}
-        run: dotnet test EpamWebsiteTests.TestLayer/EpamWebsite.Tests.csproj --configuration Release --logger "trx;LogFileName=ui-tests.trx" --results-directory artifacts/test-results/ui
+        run: |
+          dotnet test EpamWebsiteTests.TestLayer/EpamWebsite.Tests.csproj --configuration Release --logger "trx;LogFileName=ui-tests.trx" --results-directory artifacts/test-results/ui
+          dotnet test EpamWebsite.BDDTests/EpamWebsite.BDDTests.csproj --configuration Release --logger "trx;LogFileName=bdd-ui-tests.trx" --results-directory artifacts/test-results/ui-bdd
 
       - if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: ui-test-results
-          path: artifacts/test-results/ui/**/*.trx
+          path: |
+            artifacts/test-results/ui/**/*.trx
+            artifacts/test-results/ui-bdd/**/*.trx
+          if-no-files-found: warn
+
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: '**/EpamScreenshots/**/*'
           if-no-files-found: warn
