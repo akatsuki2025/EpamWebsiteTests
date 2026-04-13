@@ -1,5 +1,5 @@
 ﻿using OpenQA.Selenium;
-using OpenQA.Selenium.Support.UI;
+using Serilog;
 
 namespace EpamWebsiteTests.BusinessLayer.PageObjects;
 
@@ -7,50 +7,74 @@ public class MainPage : BasePage
 {
     private const string MainUrl = "https://www.epam.com/";
     private readonly By careersLink = By.LinkText("Careers");
+    private readonly By insightsLink = By.LinkText("Insights");
     private readonly By globalSearchButton = By.ClassName("header-search__button");
     private readonly By globalSearchInput = By.Name("q");
     private readonly By globalSearchSubmitButton = By.XPath("//button[contains(@class,'custom-search-button') and .//span[contains(text(),'Find')]]");
     private readonly By globalSearchResultLinks = By.CssSelector(".search-results__item a");
+    private readonly By codeOfEthicalConductPdfLink = By.CssSelector("footer a[href*='Code-Of-Conduct'][href$='.pdf']");
+    private readonly By servicesMenuItem = By.LinkText("Services");
+    private readonly By serviceCategoryLinks = By.CssSelector(".top-navigation__sub-link");
 
     public MainPage(IWebDriver driver) : base(driver)
     {
     }
 
-    public void Open()
+    public void OpenHomePageWithConsentCookie()
     {
+        Log.Information("Navigating to main page: {MainUrl}", MainUrl);
         Driver.Navigate().GoToUrl(MainUrl);
+
+        WaitForPageLoadComplete();
+
+        Log.Information("Adding consent cookie.");
         Driver.Manage().Cookies.AddCookie(new Cookie(
             "OptanonAlertBoxClosed",
             DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-            ".epam.com", "/", DateTime.UtcNow.AddYears(1)));
+            ".epam.com",
+            "/",
+            DateTime.UtcNow.AddYears(1)));
 
         Driver.Navigate().Refresh();
+        WaitForPageLoadComplete();
     }
 
     public void ClickCareers()
     {
+        Log.Information("Clicking Careers link.");
         WaitUntilClickable(careersLink).Click();
+    }
+
+    public void ClickInsights()
+    {
+        Log.Information("Clicking Insights link.");
+        WaitUntilClickable(insightsLink).Click();
     }
 
     public void ClickGlobalSearchButton()
     {
+        Log.Information("Clicking global search button.");
         WaitUntilClickable(globalSearchButton).Click();
     }
 
     public void EnterGlobalSearchKeyword(string keyword)
     {
+        Log.Information("Entering global search keyword: {Keyword}", keyword);
         var searchInput = WaitUntilClickable(globalSearchInput);
-        searchInput.Clear();
+        searchInput.SendKeys(Keys.Control + "a");
+        searchInput.SendKeys(Keys.Delete);
         searchInput.SendKeys(keyword);
     }
 
     public void ClickGlobalSearchSubmitButton()
     {
+        Log.Information("Clicking global search submit button.");
         WaitUntilClickable(globalSearchSubmitButton).Click();
     }
 
     public IReadOnlyCollection<IWebElement> GetGlobalSearchResultLinks()
     {
+        Log.Information("Getting global search result links.");
         return Wait.Until(d =>
         {
             var links = d.FindElements(globalSearchResultLinks)
@@ -59,5 +83,50 @@ public class MainPage : BasePage
 
             return links.Count > 0 ? links : null;
         });
+    }
+
+    public void ScrollToElement(IWebElement element)
+    {
+        Log.Information("Scrolling to {Element}.", element.Text);
+        ((IJavaScriptExecutor)Driver).ExecuteScript(
+            "arguments[0].scrollIntoView({ block: 'center', inline: 'nearest' });",
+            element);
+    }
+
+    public void ClickCodeOfEthicalConductPdf()
+    {
+        Log.Information("Clicking Code of Ethical Conduct PDF link.");
+
+        var link = WaitForDisplayedAndEnabledElement(codeOfEthicalConductPdfLink);
+        if (link == null)
+        {
+            Log.Warning("Code of Ethical Conduct PDF link not found or not enabled.");
+            return;
+        }
+
+        ScrollToElement(link);
+        Wait.Until(_ => link.Displayed && link.Enabled);
+        link.Click();
+    }
+
+    public void HoverOverServicesMenu()
+    {
+        Log.Information("Hovering over the Services menu item.");
+        var servicesMenu = WaitUntilVisible(servicesMenuItem);
+        var actions = new OpenQA.Selenium.Interactions.Actions(Driver);
+        actions.MoveToElement(servicesMenu).Perform();
+    }
+
+    public void SelectServiceCategory(string serviceCategory)
+    {
+        Log.Information("Selecting {ServiceCategory} category from Services dropdown.", serviceCategory);
+        var categoryLink = WaitForDisplayedElementWithText(serviceCategoryLinks, serviceCategory);
+
+        if (categoryLink == null)
+        {
+            Log.Warning("Service category link with text '{ServiceCategory}' was not found.", serviceCategory);
+            return;
+        }
+        categoryLink.Click();
     }
 }
