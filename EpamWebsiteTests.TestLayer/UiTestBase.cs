@@ -42,7 +42,7 @@ public abstract class UiTestBase : IDisposable
 
     protected UiTestBase()
     {
-        _testName = TestContext.Current.Test?.TestDisplayName ?? GetType().Name;
+        _testName = GetShortTestName(TestContext.Current.Test?.TestDisplayName ?? GetType().Name);
         _testLogContext = LogContext.PushProperty("Scenario", GetType().Name);
 
         DownloadDirectory = TestDirectoriesHelper.GetDownloadDirectory();
@@ -102,5 +102,22 @@ public abstract class UiTestBase : IDisposable
         {
             Log.Error(ex, "Failed to capture screenshot during dispose.");
         }
+    }
+
+    private static string GetShortTestName(string name)
+    {
+        var parenIndex = name.IndexOf('(');
+        if (parenIndex >= 0)
+        { 
+            name = name[..parenIndex]; 
+        }
+
+        var lastDot = name.LastIndexOf('.');
+        if (lastDot >= 0)
+        {
+            name = name[(lastDot + 1)..];
+        }
+
+        return name.Trim();
     }
 }

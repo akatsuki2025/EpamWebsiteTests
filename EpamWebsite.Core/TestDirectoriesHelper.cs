@@ -15,10 +15,8 @@ public static class TestDirectoriesHelper
     public static string GetScreenshotDirectory()
     {
         var runTimestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
-        return Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "EpamScreenshots",
-            runTimestamp);
+        var projectRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        return Path.Combine(projectRoot, "EpamScreenshots", runTimestamp);
     }
 
     public static void DeleteDirectoryIfExists(string directory)
